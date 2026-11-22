@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-body text-ink antialiased;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(211, 95, 123, 0.07), transparent 42%),
+      radial-gradient(circle at 88% 0%, rgba(124, 155, 100, 0.09), transparent 46%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(211, 95, 123, 0.22);
+  }
+  strong, b {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  /* 纸质卡片：全站唯一的表面语言 */
+  .card {
+    @apply rounded-card border-hair border-line bg-paper2 shadow-sticker-sm;
+  }
+  .card-quiet {
+    @apply rounded-card border-hair border-line/70 bg-paper2/70;
+  }
+  /* 浮层：弹窗、浮条、toast */
+  .card-float {
+    @apply rounded-card border-hair border-line bg-paper2 shadow-float;
+  }
+  .section-title {
+    @apply flex items-center gap-2 text-section font-bold text-ink;
+  }
+  .micro {
+    @apply text-micro text-inkfaint;
+  }
+  .caption {
+    @apply text-caption text-inksoft;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* 按钮：一套语法，三种语气 */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-caption font-semibold transition-[transform,background-color,border-color,box-shadow] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0;
+  }
+  /* 主按钮用更深的莓红：#B94C67 上白字约 4.9:1；莓红 #D35F7B 留给强调与描边 */
+  .btn-primary {
+    @apply btn border-hair border-berry-deep bg-berry-deep text-paper2 shadow-sticker-sm hover:bg-berry;
+  }
+  /* 禁用统一成纸底灰字，不再叠透明度（避免文字掉到 1.7:1） */
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-soft:disabled,
+  .btn-ghost:disabled {
+    @apply border-line bg-line/40 text-inksoft shadow-none;
+  }
+  .btn-secondary {
+    @apply btn border-hair border-line bg-paper2 text-ink hover:border-line-strong hover:bg-paper;
+  }
+  .btn-ghost {
+    @apply btn border border-transparent bg-transparent text-inksoft hover:bg-line/40 hover:text-ink;
+  }
+  .btn-soft {
+    @apply btn border-hair border-line bg-paper text-ink hover:bg-line/40;
+  }
+  .btn-xs {
+    @apply px-2.5 py-1 text-micro;
+  }
+
+  /* 标签 / 统计 */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border-hair border-line bg-paper2 px-2.5 py-1 text-caption font-semibold text-ink;
+  }
+  .pill-soft {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-line/35 px-2 py-0.5 text-micro font-medium text-inksoft;
+  }
+  .stat-value {
+    @apply num text-caption font-bold text-ink;
+  }
+
+  /* 页签 */
+  .tab {
+    @apply inline-flex flex-none items-center gap-1.5 rounded-full border-hair border-transparent px-3 py-1.5 text-caption font-semibold text-inksoft transition-colors duration-150 hover:bg-paper2 hover:text-ink;
+  }
+  .tab-active {
+    @apply border-line bg-paper2 text-ink shadow-sticker-sm hover:bg-paper2;
+  }
+
+  /* 内容贴纸：emoji / 图片都放进来，尺寸与描边统一 */
+  .sticker-tile {
+    @apply flex h-9 w-9 flex-none items-center justify-center rounded-control border-hair border-line bg-paper text-lg;
+  }
+  .sticker-tile-lg {
+    @apply flex h-12 w-12 flex-none items-center justify-center rounded-control border-hair border-line bg-paper text-2xl;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border-hair border-line bg-paper px-2 py-1 text-micro text-ink;
+  }
+  .chip-active {
+    @apply border-sage-deep bg-sage/15 text-sage-deep;
+  }
+  /* 缺少贴纸的内容用纸色剪影，避免和手绘贴纸/系统 emoji 混成两种物料 */
+  .art-silhouette {
+    filter: grayscale(1) sepia(0.18) brightness(0.72);
+    opacity: 0.55;
+  }
+
+  .field {
+    @apply rounded-control border-hair border-line bg-paper2 px-2.5 py-1.5 text-caption text-ink placeholder:text-inkfaint focus:border-sage focus:outline-none;
+  }
+}
+@layer utilities {
+  /* 星辰觉醒：更饱和、带金光呼吸 */
+  .star-art {
+    filter: saturate(1.3) brightness(1.06) drop-shadow(0 0 8px rgba(255, 205, 110, 0.9));
+    animation: star-breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes star-breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-1.5px) scale(1.02); }
+  }
+}
+
+/* 破壳画面：卡片弹出 + 星星闪烁 */
+@keyframes pop {
+  0% { transform: scale(.92) translateY(8px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes floatUp {
+  0% { opacity: 0; transform: translateY(10px) scale(.85); }
+  15% { opacity: 1; transform: translateY(0) scale(1.12); }
+  55% { opacity: 1; transform: translateY(-18px) scale(1.04); }
+  100% { opacity: 0; transform: translateY(-42px) scale(1); }
+}
+
+/* 破壳画面的稀有度光效：元素本身需要 animation，keyframes 单独定义不够 */
+.hatch-rain { animation: hatchRain 1.7s linear infinite; }
+.hatch-beam { animation: hatchBeam 2.2s ease-in-out infinite; }
+.hatch-ring { animation: hatchRing 1.9s ease-out infinite; }
+
+@keyframes hatchRain {
+  0% { opacity: 0; transform: translateY(-16px); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(190px); }
+}
+
+@keyframes hatchBeam {
+  0%, 100% { opacity: .25; }
+  50% { opacity: .8; }
+}
+
+@keyframes hatchRing {
+  0% { opacity: .9; transform: translate(-50%, -50%) scale(.55); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes spark {
+  0%, 100% { transform: scale(.6); opacity: .25; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+.hatch-spark {
+  animation: spark 1.4s ease-in-out infinite;
+}
+
+
+/* 稀有度视觉分级：史诗紫调、传说金调（图鉴与养成卡片共用） */
+.card-rar-epic {
+  background: linear-gradient(170deg, #FDF7FB 0%, #F6EDF7 55%, #FBF3E7 100%);
+  border-color: #B79AC6;
+  box-shadow: 0 0 0 1px rgba(154, 123, 168, 0.35), 0 6px 16px rgba(154, 123, 168, 0.16);
+}
+.card-rar-legend {
+  background: linear-gradient(170deg, #FFFAEA 0%, #FDEFCC 55%, #FBF3E7 100%);
+  border-color: #D9A63C;
+  box-shadow: 0 0 0 1px rgba(201, 146, 47, 0.45), 0 8px 20px rgba(201, 146, 47, 0.22);
+}
+.rar-badge {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  border-radius: 0 10px 0 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #FFFCF6;
+}
+.rar-badge-epic { background: linear-gradient(135deg, #A98BB8, #83679B); }
+.rar-badge-legend {
+  background: linear-gradient(135deg, #E7B453, #C9922F);
+  box-shadow: 0 1px 6px rgba(201, 146, 47, 0.45);
+}
+/* 传说卡流光扫过 */
+@keyframes legendSweep {
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(220%); }
+}
+.rar-shine { position: relative; overflow: hidden; }
+.rar-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 246, 214, 0.75), transparent);
+  animation: legendSweep 3.4s ease-in-out infinite;
+  pointer-events: none;
+}

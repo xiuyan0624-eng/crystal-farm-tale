@@ -1,0 +1,17 @@
+{
+  "path": "/Users/wfxy/Documents/deepseek-harness/default-workspace/farm-tale-src/src/assets/audio/bgm.mp3",
+  "format": "mp3",
+  "durationSeconds": 60,
+  "bpm": 88,
+  "key": "F",
+  "mode": "major",
+  "seed": 3060643937,
+  "peak": 0.861,
+  "instruments": [
+    "guitar",
+    "shaker"
+  ],
+  "rhythm": "pop",
+  "prompt": "Cozy acoustic farm afternoon, gentle fingerpicked guitar and soft flute over light shaker, warm and unhurried, pastoral major key, 88 bpm, loopable, no vocals, no drums",
+  "generatedAt": "2026-11-21T10:24:21.310Z"
+}
