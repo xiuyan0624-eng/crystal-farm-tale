@@ -29,3 +29,4 @@ dist-ssr
 /src/assets/sticker-pre-normalize/
 /.oil-ui/
 /verify-out/
+/game-studio/.studio/

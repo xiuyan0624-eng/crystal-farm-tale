@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "assets": {
+    "hero": {
+      "slot": "hero",
+      "file": "assets/hero.svg",
+      "source": "edited",
+      "appliedAt": "2026-11-10T11:58:43.060Z",
+      "license": "Changed inside this project (by hand or by the agent) after it was recorded; its terms follow the project and whatever it was based on.",
+      "sha256": "2da1beee9bbbed9dd55855569edb3e907a63d0957497082530e72ab03c743654",
+      "basedOn": {
+        "source": "template",
+        "file": "assets/hero.svg",
+        "license": "MIT (bundled template art, original to dsh-game-studio)"
+      }
+    },
+    "enemy": {
+      "slot": "enemy",
+      "file": "assets/enemy.svg",
+      "source": "edited",
+      "appliedAt": "2026-11-10T11:58:43.061Z",
+      "license": "Changed inside this project (by hand or by the agent) after it was recorded; its terms follow the project and whatever it was based on.",
+      "sha256": "863a2c88aba70f554d70f6c0e62389444516805083b996a81b968d1056ddbcac",
+      "basedOn": {
+        "source": "template",
+        "file": "assets/enemy.svg",
+        "license": "MIT (bundled template art, original to dsh-game-studio)"
+      }
+    },
+    "pickup": {
+      "slot": "pickup",
+      "file": "assets/pickup.svg",
+      "source": "edited",
+      "appliedAt": "2026-11-10T11:58:43.066Z",
+      "license": "Changed inside this project (by hand or by the agent) after it was recorded; its terms follow the project and whatever it was based on.",
+      "sha256": "a322bda698bacddc4e05292fb1de1a0e3aaf8d2f2f2699f0a19364ad49dd43ca",
+      "basedOn": {
+        "source": "template",
+        "file": "assets/pickup.svg",
+        "license": "MIT (bundled template art, original to dsh-game-studio)"
+      }
+    },
+    "background": {
+      "slot": "background",
+      "file": "assets/background.svg",
+      "source": "edited",
+      "appliedAt": "2026-11-10T11:58:43.067Z",
+      "license": "Changed inside this project (by hand or by the agent) after it was recorded; its terms follow the project and whatever it was based on.",
+      "sha256": "ad429f40b8a900e461cc30b93b5b3c96fe259f0e51e5787b9194fc46e093727c",
+      "basedOn": {
+        "source": "template",
+        "file": "assets/background.svg",
+        "license": "MIT (bundled template art, original to dsh-game-studio)"
+      }
+    }
+  }
+}
