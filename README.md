@@ -44,6 +44,16 @@ docs/              美术规格书（art-style-bible.md）
 - 素材由本机 Codex / GPT 图像模型批量生成，再用 `tools/import-art.py` + `tools/normalize-art.py` 归一后入库
 - 场景零件（谷仓/围栏/地块/住处）和 UI 都没有贴纸边，只有「卡面」里的角色保留 die-cut 边
 
+## 在线试玩
+
+- **GitHub Pages**：https://xiuyan0624-eng.github.io/crystal-farm-tale/
+- **Releases**：`playable.html` 是构建好的单文件游戏，下载后直接双击就能离线玩
+
+## game-studio/
+
+`farm-tale/` 那个 Game Studio 工程的归档（`game.json`、`game.js`、`assets/`，以及一路迭代的开发截图 `docs/`）。
+换机器时把这一层用 Game Studio 打开，就能继续构建/发布；也可以直接忽略，源码构建出来的产物和它等价。
+
 ## 说明
 
 个人练习项目，代码随便看；素材是 AI 生成 + 手工整理，商用请自行确认生成模型的条款。
