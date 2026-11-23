@@ -178,7 +178,8 @@ const LAYOUT = LAYOUTS[LAYOUT_ID] ?? LAYOUTS.d
 const WALKER_SCALE = LAYOUT.walkerScale ?? 1
 const PLOT_SIZE = LAYOUT.plotSize ?? 88
 const PASTURE = LAYOUT.pasture
-const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 50, x2: 640, y1: 635, y2: 705 }
+// 默认带放在画布中段草地上：底部 y635+ 会被「选种子/一键浇水」浮层挡住
+const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 400, x2: 700, y1: 250, y2: 600 }
 
 /** 地块分区：左上 2×2 温室、右下 2×2 池塘，其余是普通田 */
 const GRID_COLS = LAYOUT.grid.cols ?? PLOT_COLS

@@ -1,0 +1,15 @@
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const { chromium } = require('/Users/wfxy/.dsh/profiles/desktop/node_modules/playwright-core')
+const b = await chromium.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true })
+const p = await b.newPage({ viewport: { width: 1280, height: 900 } })
+const errs = []
+p.on('pageerror', e => errs.push(String(e).slice(0, 160)))
+await p.goto('https://xiuyan0624-eng.github.io/crystal-farm-tale/', { waitUntil: 'load' })
+await p.waitForTimeout(1500)
+await p.getByText('小莓', { exact: false }).first().click()
+await p.waitForTimeout(1800)
+const t = await p.evaluate(() => document.body.innerText.slice(0, 80).replace(/\n/g, ' '))
+await p.screenshot({ path: '/tmp/live-farm.png' })
+console.log(JSON.stringify({ t, errs: errs.slice(0, 2) }))
+await b.close()
