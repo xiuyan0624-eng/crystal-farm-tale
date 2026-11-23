@@ -328,6 +328,12 @@ function rand(seed: number) {
 }
 
 
+/** 材料的色标：让线描图标也有贴纸那样的「颜色块」重量 */
+const MATERIAL_TINT: Record<string, string> = {
+  fiber: '#9DBE7C', hide: '#C68C5A', dust: '#C9A227', fang: '#C9744F', scale: '#D37A96',
+  ember: '#E0803C', fert: '#8C7A62', fert_rare: '#7C9B64', egg: '#E7B453', milk: '#C9D6DC', wool: '#E5D6C3',
+}
+
 /** 材料 / 肥料这类没有贴纸的物品，用统一的矢量图标，不再混用 emoji */
 function materialIconName(id: string): IconName {
   const base = id.replace(/_q\d+$/, '')
@@ -339,6 +345,9 @@ function materialIconName(id: string): IconName {
     case 'fang': return 'fang'
     case 'scale': return 'scale'
     case 'ember': return 'sparkle'
+    case 'egg': return 'egg'
+    case 'milk': return 'bottle'
+    case 'wool': return 'paw'
     case 'fert': case 'fert_rare': return 'fert'
     default: return 'leaf'
   }
@@ -1863,11 +1872,14 @@ export default function PixelWorld({ game }: { game: GameApi }) {
                   <button key={id} onClick={() => { game.sellItem(id); sfx('coin') }} title={`出售 ${itemName(id)}`}
                     className="chip px-2.5 py-1.5 hover:bg-paper2"
                     style={{ borderColor: q.q > 1 ? q.color : undefined }}>
-                    {stk
-                      ? <img src={stk} className="h-5 w-5 object-contain" alt="" />
-                      : el
-                        ? <Icon name="gem" size={16} style={{ color: ELEMENTS[el].color }} />
-                        : <Icon name={materialIconName(id)} size={16} className="text-inksoft" />}
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line bg-paper2/60"
+                      style={!stk && !el ? { background: MATERIAL_TINT[id.replace(/_q\d+$/, '')] ?? '#B9AE9A', borderColor: 'transparent' } : undefined}>
+                      {stk
+                        ? <img src={stk} className="h-5 w-5 object-contain" alt="" />
+                        : el
+                          ? <Icon name="gem" size={14} style={{ color: ELEMENTS[el].color }} />
+                          : <Icon name={materialIconName(id)} size={13} className="text-[color:#FFFDF8]" />}
+                    </span>
                     <span style={q.q > 1 ? { color: q.color } : undefined}>{itemName(id)}</span>
                     <span className="num text-inkfaint">×{n}</span>
                   </button>
