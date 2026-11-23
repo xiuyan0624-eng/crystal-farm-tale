@@ -316,9 +316,13 @@ export function ownerLook(equip: Partial<Record<EquipSlot, string>>): OwnerLook 
   return equipById(equip.outfit)?.look ?? 'classic'
 }
 
-/** 星辰觉醒：究极体 Lv60 后，用 3 颗星尘碎片唤醒，全属性 +20% */
+/** 传说召唤阵：五系结晶各 10 枚（任意品级） */
+export const SUMMON_COST = 10
+
+/** 星辰觉醒：究极体 Lv60 后，用 3 颗星尘碎片 + 2 片龙鳞唤醒，全属性 +20% */
 export const STAR_LEVEL = 60
 export const STAR_SHARD_COST = 3
+export const STAR_SCALE_COST = 2
 export const STAR_MUL = 1.2
 
 export const expForLevel = (level: number) => level * 30
@@ -369,13 +373,13 @@ export function enhanceCost(tier: number, nextLevel: number): { id: string; qty:
   }
 }
 
-export const MATERIALS: { id: string; name: string; icon: string; price: number; from: string }[] = [
+export const MATERIALS: { id: string; name: string; icon: string; price: number; from: string; use?: string }[] = [
   { id: 'fiber', name: '野草纤维', icon: '🌾', price: 8, from: '草丛史莱姆 / 孢子菇' },
   { id: 'hide', name: '粗兽皮', icon: '🟫', price: 22, from: '暴躁野猪 / 岩甲兽' },
   { id: 'fang', name: '尖牙', icon: '🦷', price: 34, from: '月夜魔狼 / 霜牙狼' },
   { id: 'shell', name: '龟甲片', icon: '🛡️', price: 46, from: '深渊玄龟 / 潮汐贝' },
   { id: 'ember', name: '火种', icon: '🔥', price: 60, from: '熔岩巨像 / 焚岩兽' },
-  { id: 'scale', name: '龙鳞', icon: '🐲', price: 120, from: '苍穹古龙 / 星辉幼龙' },
+  { id: 'scale', name: '龙鳞', icon: '🐲', price: 120, from: '苍穹古龙 / 星辉幼龙', use: '强化 +4/+5、星辰觉醒' },
   { id: 'dust', name: '结晶尘', icon: '✨', price: 18, from: '所有魔物' },
 ]
 

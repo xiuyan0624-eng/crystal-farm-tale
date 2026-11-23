@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ANIMALS, CROPS, ELEMENTS, EVOLVE_LEVEL, JOBS, RARITIES, SPECIES_MAP, STAGES, STAR_LEVEL, STAR_SHARD_COST, cropVariants, expForLevel, itemIcon, itemName, jobEff, type FeedStat, type Sprite } from '../game/data'
+import { ANIMALS, CROPS, ELEMENTS, EVOLVE_LEVEL, JOBS, RARITIES, SPECIES_MAP, STAGES, STAR_LEVEL, STAR_SCALE_COST, STAR_SHARD_COST, cropVariants, expForLevel, itemIcon, itemName, jobEff, type FeedStat, type Sprite } from '../game/data'
 import { spriteImage } from '../game/spriteImages'
 import type { GameApi } from '../game/useGame'
 import Icon, { type IconName } from '../ui/Icon'
@@ -221,14 +221,14 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-control border-hair border-butter/60 bg-butter/[0.08] px-2.5 py-2">
           <div className="min-w-0">
             <div className="text-caption font-bold text-ink">星辰觉醒</div>
-            <div className="micro">究极体 Lv.{STAR_LEVEL} + {STAR_SHARD_COST} 颗星尘碎片：全属性 +20%，换星辰外观</div>
+            <div className="micro">究极体 Lv.{STAR_LEVEL} + 星尘碎片×{STAR_SHARD_COST} + 龙鳞×{STAR_SCALE_COST}：全属性 +20%，换星辰外观</div>
           </div>
           <button
             onClick={() => { awakenStar(sprite.id); sfx('levelup') }}
-            disabled={sprite.level < STAR_LEVEL || (state.inventory.star_shard ?? 0) < STAR_SHARD_COST}
+            disabled={sprite.level < STAR_LEVEL || (state.inventory.star_shard ?? 0) < STAR_SHARD_COST || (state.inventory.scale ?? 0) < STAR_SCALE_COST}
             className="btn-primary btn-xs shrink-0"
           >
-            觉醒 ✨{state.inventory.star_shard ?? 0}/{STAR_SHARD_COST}
+            觉醒 ✨{state.inventory.star_shard ?? 0}/{STAR_SHARD_COST} 🐲{state.inventory.scale ?? 0}/{STAR_SCALE_COST}
           </button>
         </div>
       )}

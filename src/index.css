@@ -280,3 +280,9 @@
   animation: legendSweep 3.4s ease-in-out infinite;
   pointer-events: none;
 }
+
+/* 农场里伙伴的轻微上下浮动（DOM 叠层用） */
+@keyframes companion-bob {
+  from { translate: 0 0; }
+  to { translate: 0 -6px; }
+}

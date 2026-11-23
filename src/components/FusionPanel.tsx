@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CRYSTAL_Q, ELEMENTS, ELEMENT_LIST, RARITIES, itemName, parseItem, type Element } from '../game/data'
+import { CRYSTAL_Q, ELEMENTS, ELEMENT_LIST, RARITIES, SUMMON_COST, itemName, parseItem, type Element } from '../game/data'
 import { rarityByScore, type GameApi } from '../game/useGame'
 import Icon from '../ui/Icon'
 import { sfx } from '../game/audio'
@@ -58,7 +58,11 @@ export default function FusionPanel({ game }: { game: GameApi }) {
     const maxN = Math.max(...elemCounts.values())
     topEls = [...elemCounts.entries()].filter(([, n]) => n === maxN).map(([e]) => e)
   }
-  const canSummon = ELEMENT_LIST.every(el => Object.entries(state.inventory).some(([id, v]) => parseItem(id).base === `crystal_${el}` && v > 0))
+  const crystalCount = (el: (typeof ELEMENT_LIST)[number]) =>
+    Object.entries(state.inventory)
+      .filter(([id]) => parseItem(id).base === `crystal_${el}`)
+      .reduce((sum, [, v]) => sum + v, 0)
+  const canSummon = ELEMENT_LIST.every(el => crystalCount(el) >= SUMMON_COST)
 
   return (
     <div className="space-y-3">
@@ -179,19 +183,21 @@ export default function FusionPanel({ game }: { game: GameApi }) {
         <h2 className="section-title">
           <Icon name="sparkle" size={18} className="text-butter-deep" />
           传说召唤阵
-          <span className="pill-soft ml-auto">五系各 1 枚</span>
+          <span className="pill-soft ml-auto num">五系各 {SUMMON_COST} 枚</span>
         </h2>
-        <p className="caption mt-1.5">集齐五系结晶各 1 枚（任意品级），随机召唤一只限定传说精灵：世界树苗 / 潮汐圣兽 / 朱雀 / 麒麟 / 星辉龙。</p>
+        <p className="caption mt-1.5">
+          集齐五系结晶各 {SUMMON_COST} 枚（任意品级，优先消耗低品级），随机召唤一只限定传说精灵：世界树苗 / 潮汐圣兽 / 朱雀 / 麒麟 / 星辉龙。
+          召唤出的精灵会直接加入牧场。
+        </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {ELEMENT_LIST.map(el => {
-            const n = Object.entries(state.inventory)
-              .filter(([id]) => parseItem(id).base === `crystal_${el}`)
-              .reduce((s2, [, v]) => s2 + v, 0)
+            const n = crystalCount(el)
+            const ok = n >= SUMMON_COST
             return (
-              <span key={el} className={`pill ${n > 0 ? '' : 'opacity-45'}`}>
+              <span key={el} className={`pill ${ok ? '' : 'opacity-60'}`}>
                 <ElementDot el={el} size={7} />
                 {ELEMENTS[el].name}
-                <span className="num text-inkfaint">×{n}</span>
+                <span className={`num ${ok ? 'text-sage-deep' : 'text-inkfaint'}`}>{n}/{SUMMON_COST}</span>
               </span>
             )
           })}

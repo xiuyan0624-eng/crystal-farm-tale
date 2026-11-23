@@ -3,7 +3,7 @@ import {
   ANIMALS, CROPS, CRYSTAL_Q, CROP_EXP, ELEMENTS, ELEMENT_LIST, EVOLVE_LEVEL, FERTILIZERS, JOBS,
   LIMITED_SPECIES, MAX_PLOTS, PLOT_LEVELS, QUALITIES, QUALITY_WEIGHTS, SPECIES_MAP,
   babiesOf, calcStats, expForLevel, farmExpForLevel, itemIcon, itemName, jobEff, parseItem,
-  EQUIPS, EQUIP_MAP, MATERIALS, equipLevelMul, enhanceCost, EQUIP_MAX_LEVEL, PLOT_KINDS, plotExpandCost, rollCrystalQuality, specialsOf, STAR_LEVEL, STAR_SHARD_COST, STAR_MUL,
+  EQUIPS, EQUIP_MAP, MATERIALS, equipLevelMul, enhanceCost, EQUIP_MAX_LEVEL, PLOT_KINDS, plotExpandCost, rollCrystalQuality, specialsOf, STAR_LEVEL, STAR_SHARD_COST, STAR_SCALE_COST, STAR_MUL, SUMMON_COST,
   type PlotKind,
   type Element, type FeedStat, type JobId, type Rarity, type Sprite, type SpriteSpecies,
 } from './data'
@@ -72,6 +72,8 @@ export interface GameState {
   equipLevels: Record<string, number>
   /** 精英怪每日首杀：记录日期与当天已拿过奖励的敌 id */
   eliteDaily: { date: string; ids: string[] }
+  /** 最近卖出的东西（用于误卖回购） */
+  sellLog: { id: string; price: number }[]
   /** 当前穿戴：每个槽位一件 */
   ownerEquip: { tool?: string; outfit?: string; charm?: string }
   /** 竖切：首次胡萝卜收获是否已保底给过土结晶 */
@@ -298,6 +300,7 @@ function initialState(): GameState {
   ownedEquips: [],
   equipLevels: {},
   eliteDaily: { date: '', ids: [] },
+  sellLog: [],
   ownerEquip: {},
     goalsClaimed: [],
     firstEarthCrystalGranted: false,
@@ -342,6 +345,7 @@ function loadState(): GameState {
       ownedEquips: (parsed as Partial<GameState>).ownedEquips ?? [],
       equipLevels: (parsed as Partial<GameState>).equipLevels ?? {},
       eliteDaily: (parsed as Partial<GameState>).eliteDaily ?? { date: '', ids: [] },
+      sellLog: Array.isArray(parsed.sellLog) ? parsed.sellLog.slice(-12) : [],
       ownerEquip: (parsed as Partial<GameState>).ownerEquip ?? {},
           firstEarthCrystalGranted: parsed.firstEarthCrystalGranted ?? false,
         }
@@ -701,7 +705,22 @@ export function useGame() {
       const inv = { ...s.inventory }
       addItem(inv, itemId, -1)
       notify(`卖出 ${itemIcon(itemId)}${itemName(itemId)}，+${price} 金币`)
-      return { ...s, coins: s.coins + price, inventory: inv }
+      const sellLog = [...(s.sellLog ?? []), { id: itemId, price }].slice(-12)
+      return { ...s, coins: s.coins + price, inventory: inv, sellLog }
+    })
+  }, [notify, addItem])
+
+  /** 误卖回购：按当时卖价买回最近卖出的一件 */
+  const buyBack = useCallback((index: number) => {
+    setState(s => {
+      const log = s.sellLog ?? []
+      const entry = log[index]
+      if (!entry) return s
+      if (s.coins < entry.price) { notify('金币不够买回这一件'); return s }
+      const inv = { ...s.inventory }
+      addItem(inv, entry.id, 1)
+      notify(`回购 ${itemIcon(entry.id)}${itemName(entry.id)}，-${entry.price} 金币`)
+      return { ...s, coins: s.coins - entry.price, inventory: inv, sellLog: log.filter((_, i) => i !== index) }
     })
   }, [notify, addItem])
 
@@ -1044,15 +1063,26 @@ export function useGame() {
     setState(s => (s.lastHatch ? { ...s, lastHatch: null, lastHatchRarity: null } : s))
   }, [])
 
-  // 限定传说召唤：五系结晶各1枚
+  // 限定传说召唤：五系结晶各 10 枚（任意品级，优先消耗低品级）
   const summonLimited = useCallback(() => {
     setState(s => {
-      // 任意品质的五系结晶各1枚
-      const findOne = (el: Element) => Object.keys(s.inventory).find(id => id.startsWith(`crystal_${el}`) && (s.inventory[id] ?? 0) > 0 && parseItem(id).base === `crystal_${el}`)
-      const picks = ELEMENT_LIST.map(findOne)
-      if (picks.some(p => !p)) { notify('需要五种元素结晶各 1 枚！'); return s }
       const inv = { ...s.inventory }
-      picks.forEach(id => addItem(inv, id!, -1))
+      const need = SUMMON_COST
+      for (const el of ELEMENT_LIST) {
+        const ids = Object.keys(inv)
+          .filter(id => parseItem(id).base === `crystal_${el}` && (inv[id] ?? 0) > 0)
+          .sort((a, b) => parseItem(a).q - parseItem(b).q)
+        let left = need
+        for (const id of ids) {
+          if (left <= 0) break
+          const take = Math.min(left, inv[id] ?? 0)
+          if (take > 0) { addItem(inv, id, -take); left -= take }
+        }
+        if (left > 0) {
+          setTimeout(() => notify(`需要五种元素结晶各 ${need} 枚（${ELEMENTS[el].name}还差 ${left}）`), 30)
+          return s
+        }
+      }
       const species = LIMITED_SPECIES[Math.floor(Math.random() * LIMITED_SPECIES.length)]
       const sprite = makeSprite(species)
       notify(`👑 传说降临！${ELEMENTS[species.element].icon}「${species.name}」回应了你的召唤！`)
@@ -1136,9 +1166,13 @@ export function useGame() {
       const dex = evolvedSpeciesId ? Array.from(new Set([...s.dex, evolvedSpeciesId])) : s.dex
       // 战利品：装备（BOSS 必掉 / 普通 25%）+ 星尘碎片（BOSS 1 颗 / 普通 15%）
       const ownedEquips = [...(s.ownedEquips ?? [])]
-      if (boss || Math.random() < 0.25) {
+      // 门槛：等级决定能掉到几档装备；BOSS 必掉但同样受等级限制
+      const lv = s.farmLevel
+      const maxTier = boss ? (lv >= 45 ? 3 : lv >= 30 ? 2 : 1) : (lv >= 25 ? 2 : 1)
+      const gearChance = boss ? 1 : lv >= 25 ? 0.25 : 0.12
+      if (Math.random() < gearChance) {
         const owned = new Set(ownedEquips)
-        const cand = EQUIPS.filter(e => !owned.has(e.id) && e.tier <= (boss ? 3 : 2))
+        const cand = EQUIPS.filter(e => !owned.has(e.id) && e.tier <= maxTier)
         if (cand.length) {
           const drop = cand[Math.floor(Math.random() * cand.length)]
           ownedEquips.push(drop.id)
@@ -1253,8 +1287,13 @@ export function useGame() {
         setTimeout(() => notify(`星尘碎片不够（${s.inventory.star_shard ?? 0}/${STAR_SHARD_COST}），打 BOSS 掉`), 30)
         return s
       }
+      if ((s.inventory.scale ?? 0) < STAR_SCALE_COST) {
+        setTimeout(() => notify(`龙鳞不够（${s.inventory.scale ?? 0}/${STAR_SCALE_COST}），打苍穹古龙 / 星辉幼龙掉`), 30)
+        return s
+      }
       const inv = { ...s.inventory }
       addItem(inv, 'star_shard', -STAR_SHARD_COST)
+      addItem(inv, 'scale', -STAR_SCALE_COST)
       const base = calcStats(species, sp.level, sp.stats)
       const boosted: typeof base = {
         maxHp: Math.round(base.maxHp * STAR_MUL),
@@ -1321,7 +1360,7 @@ export function useGame() {
 
   return {
     state, toasts, notify,
-    buySeed, buyAnimal, sellItem,
+    buySeed, buyAnimal, sellItem, buyBack,
     plant, water, fertilize, harvest, clearPest, upgradePlot, expandPlot, waterAll, harvestAll,
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,

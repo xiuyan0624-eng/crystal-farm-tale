@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import plotUrl from '../assets/sticker/plot.png'
 import chickenUrl from '../assets/sticker/chicken.png'
 import sheepUrl from '../assets/sticker/sheep.png'
@@ -36,7 +36,7 @@ import cropGinsengUrl from '../assets/sticker/crop_ginseng.png'
 import beeUrl from '../assets/sticker/bee.png'
 import { ownerImage } from '../game/ownerArt'
 import type { OwnerLook } from '../game/data'
-import { ANIMALS, CROPS, ELEMENTS, FERTILIZERS, PLOT_LEVELS, PLOT_KINDS, PLOT_KIND_LIST, MAX_PLOTS, QUALITIES, SPECIES_MAP, cropVariants, farmExpForLevel, itemIcon, itemName, ownerLook, plotExpandCost, qualityOf } from '../game/data'
+import { ANIMALS, CROPS, ELEMENTS, FERTILIZERS, PLOT_LEVELS, PLOT_KINDS, PLOT_KIND_LIST, MAX_PLOTS, QUALITIES, SPECIES_MAP, cropVariants, farmExpForLevel, itemIcon, itemName, ownerLook, parseItem, plotExpandCost, qualityOf } from '../game/data'
 import { SPRITE_IMAGES, ELEMENT_BLOBS, spriteImage } from '../game/spriteImages'
 import { beeBonus, isDry, plotProgress, workBonuses, type GameApi, type Plot } from '../game/useGame'
 import Icon from '../ui/Icon'
@@ -72,6 +72,8 @@ type LayoutDef = {
   /** 地块网格：起点、间距、逐行右移（做斜向错落） */
   grid: { x0: number; y0: number; dx: number; dy: number; shift?: number; cols?: number; rows?: number }
   pasture: Rect
+  /** 精灵闲逛的活动带（默认在底部草地） */
+  companionBand?: { x1: number; x2: number; y1: number; y2: number }
   /** 牧场下栏的缺口（门）：这一段不画栅栏，小路从这里进来 */
   pastureGate?: number
   barn: RectDef
@@ -130,6 +132,7 @@ const LAYOUTS: Record<'a' | 'b' | 'c' | 'd', LayoutDef> = {
     barn: { x: 430, y: 2, w: 218, h: 200 },
     path: [[556, 186], [520, 300], [596, 404], [716, 466]],
     pastureGate: 720,
+    companionBand: { x1: 430, x2: 704, y1: 250, y2: 606 },
     deco: [
       { key: 'tree', x: 1164, y: 8, w: 116, h: 142 },
       { key: 'hay', x: 662, y: 178, w: 72, h: 52 },
@@ -175,6 +178,7 @@ const LAYOUT = LAYOUTS[LAYOUT_ID] ?? LAYOUTS.d
 const WALKER_SCALE = LAYOUT.walkerScale ?? 1
 const PLOT_SIZE = LAYOUT.plotSize ?? 88
 const PASTURE = LAYOUT.pasture
+const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 50, x2: 640, y1: 635, y2: 705 }
 
 /** 地块分区：左上 2×2 温室、右下 2×2 池塘，其余是普通田 */
 const GRID_COLS = LAYOUT.grid.cols ?? PLOT_COLS
@@ -659,10 +663,13 @@ export default function PixelWorld({ game }: { game: GameApi }) {
       Array.from(st.animalWalkers.keys()).forEach(k => { if (!seen.has(k)) st.animalWalkers.delete(k) })
 
       // ---- 同步小精灵：幼体都在农场里散步；有工作的精灵也现身（能看到它在干活）----
-      const companions = g.sprites.filter(sp => {
-        const stage = SPECIES_MAP[sp.speciesId]?.stage
-        return stage === 'baby' || !!sp.job
-      }).slice(0, 8)
+      // 有工作的先上（最多 6 只），其余名额给最新的幼体/传说，保证新召唤的精灵能马上出现在牧场
+      const workers = g.sprites.filter(sp => !!sp.job).slice(0, 6)
+      const others = g.sprites
+        .filter(sp => !sp.job && SPECIES_MAP[sp.speciesId]?.stage === 'baby')
+        .slice(-6)
+        .reverse()
+      const companions = [...workers, ...others].slice(0, 10)
       const seenB = new Set<string>()
       companions.forEach(sp => {
         seenB.add(sp.id)
@@ -675,7 +682,8 @@ export default function PixelWorld({ game }: { game: GameApi }) {
             : st.imgs[`final_${species.element}`]
         st.blobWalkers.set(sp.id, {
           uid: sp.id,
-          x: 60 + Math.random() * 520, y: 620 + Math.random() * 80,
+          x: COMPANION_BAND.x1 + Math.random() * (COMPANION_BAND.x2 - COMPANION_BAND.x1),
+          y: COMPANION_BAND.y1 + Math.random() * (COMPANION_BAND.y2 - COMPANION_BAND.y1),
           tx: 0, ty: 0, speed: 78, wait: Math.random() * 2,
           moving: false, flip: false, size: Math.round((species.stage === 'baby' ? 50 : 56) * WALKER_SCALE),
           img: art,
@@ -729,7 +737,7 @@ export default function PixelWorld({ game }: { game: GameApi }) {
         const sp = g.sprites.find(x => x.id === w.uid)
         const working = !!sp?.job && sp.stamina > 0
         if (working) wanderUpdate(w, dt, 40, 720, 300, 690)
-        else wanderUpdate(w, dt, 50, 640, 635, 705)
+        else wanderUpdate(w, dt, COMPANION_BAND.x1, COMPANION_BAND.x2, COMPANION_BAND.y1, COMPANION_BAND.y2)
       })
       const f = st.farmer
       {
@@ -1513,7 +1521,27 @@ export default function PixelWorld({ game }: { game: GameApi }) {
 
   const wb = workBonuses(state)
   const seeds = Object.entries(state.inventory).filter(([id]) => id.startsWith('seed_'))
+
   const sellables = Object.entries(state.inventory).filter(([id]) => !id.startsWith('seed_'))
+  const backpackGroups = useMemo(() => {
+    const cat = (id: string) => {
+      const base = parseItem(id).base
+      if (base.startsWith('crystal_')) return 'crystal'
+      if (CROPS.some(c => c.id === base)) return 'crop'
+      if (ANIMALS.some(a => a.produceId === base)) return 'animal'
+      if (FERTILIZERS.some(f => f.id === base)) return 'fert'
+      return 'material'
+    }
+    const labels: Record<string, string> = { crop: '作物', animal: '牧场产出', crystal: '水晶', fert: '肥料', material: '材料' }
+    const order = ['crop', 'animal', 'crystal', 'fert', 'material']
+    const map = new Map<string, [string, number][]>()
+    sellables.forEach(entry => {
+      const k = cat(entry[0])
+      map.set(k, [...(map.get(k) ?? []), entry])
+    })
+    return order.map(k => ({ key: k, label: labels[k], items: map.get(k) ?? [] }))
+  }, [sellables])
+  const recentSales = (state.sellLog ?? []).map((entry, idx) => ({ entry: { ...entry, idx }, index: idx })).slice(-6).reverse()
   const popupAnimal = popup?.kind === 'animal' ? state.animals.find(a => a.uid === popup.uid) : null
   const popupDef = popupAnimal ? ANIMALS.find(d => d.id === popupAnimal.type) : null
   const popupPlot = popup?.kind === 'plot' && popup.plotIdx !== undefined ? state.plots[popup.plotIdx] : null
@@ -1782,35 +1810,59 @@ export default function PixelWorld({ game }: { game: GameApi }) {
         </section>
       </div>
 
-      {/* 背包 */}
+      {/* 背包：按类别分组 + 误卖回购 */}
       <section className="card p-4">
         <h3 className="section-title mb-3">
           <Icon name="basket" size={16} className="text-inksoft" />
           背包
           <span className="pill-soft ml-auto">点击物品出售换金币</span>
         </h3>
-        <div className="flex flex-wrap gap-1.5">
-          {sellables.length === 0 && <p className="caption">空空如也，先去种田吧。</p>}
-          {sellables.map(([id, n]) => {
-            const isCrystal = id.startsWith('crystal_')
-            const el = isCrystal ? id.replace(/crystal_/, '').replace(/_q\d+$/, '') as keyof typeof ELEMENTS : null
-            const q = qualityOf(id)
-            const stk = itemSticker(id)
-            return (
-              <button key={id} onClick={() => { game.sellItem(id); sfx('coin') }} title={`出售 ${itemName(id)}`}
-                className="chip px-2.5 py-1.5 hover:bg-paper2"
-                style={{ borderColor: q.q > 1 ? q.color : undefined }}>
-                {stk
-                  ? <img src={stk} className="h-5 w-5 object-contain" alt="" />
-                  : el
-                    ? <Icon name="gem" size={16} style={{ color: ELEMENTS[el].color }} />
-                    : <span className="text-base leading-none">{itemIcon(id)}</span>}
-                <span style={q.q > 1 ? { color: q.color } : undefined}>{itemName(id)}</span>
-                <span className="num text-inkfaint">×{n}</span>
-              </button>
-            )
-          })}
-        </div>
+        {sellables.length === 0 && <p className="caption mb-2">空空如也，先去种田吧。</p>}
+        {backpackGroups.map(g => g.items.length > 0 && (
+          <div key={g.key} className="mb-2.5 last:mb-0">
+            <div className="micro mb-1.5 flex items-center gap-1.5 text-inksoft">
+              <span className="h-1 w-1 rounded-full bg-inkfaint" />{g.label}
+              <span className="num text-inkfaint">{g.items.reduce((a, [, n]) => a + n, 0)}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {g.items.map(([id, n]) => {
+                const isCrystal = id.startsWith('crystal_')
+                const el = isCrystal ? id.replace(/crystal_/, '').replace(/_q\d+$/, '') as keyof typeof ELEMENTS : null
+                const q = qualityOf(id)
+                const stk = itemSticker(id)
+                return (
+                  <button key={id} onClick={() => { game.sellItem(id); sfx('coin') }} title={`出售 ${itemName(id)}`}
+                    className="chip px-2.5 py-1.5 hover:bg-paper2"
+                    style={{ borderColor: q.q > 1 ? q.color : undefined }}>
+                    {stk
+                      ? <img src={stk} className="h-5 w-5 object-contain" alt="" />
+                      : el
+                        ? <Icon name="gem" size={16} style={{ color: ELEMENTS[el].color }} />
+                        : <span className="text-base leading-none">{itemIcon(id)}</span>}
+                    <span style={q.q > 1 ? { color: q.color } : undefined}>{itemName(id)}</span>
+                    <span className="num text-inkfaint">×{n}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+        {recentSales.length > 0 && (
+          <div className="mt-3 border-t border-hair border-line pt-2.5">
+            <div className="micro mb-1.5 text-inksoft">最近卖出（点「回购」原价买回）</div>
+            <div className="flex flex-wrap gap-1.5">
+              {recentSales.map(({ entry, index }) => (
+                <button key={`${entry.id}-${index}`} onClick={() => { game.buyBack(entry.idx); sfx('coin') }}
+                  className="chip px-2 py-1 hover:bg-paper2" title={`${itemName(entry.id)} · ${entry.price} 金币`}>
+                  {itemIcon(entry.id)}
+                  <span>{itemName(entry.id)}</span>
+                  <span className="num text-inkfaint">{entry.price}</span>
+                  <span className="ml-0.5 text-micro text-[color:var(--berry)]">回购</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-micro text-inksoft">
           <span className="inline-flex items-center gap-1"><Icon name="sparkle" size={12} className="text-inkfaint" />品质由浇水 / 施肥 / 土地 / 精灵工作决定：</span>
           {QUALITIES.map(q => (
