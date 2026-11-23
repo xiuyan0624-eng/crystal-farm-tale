@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ELEMENTS, ENEMIES, EQUIP_MAP, SPECIES_MAP, counterMul, itemIcon, itemName, type Element, type EnemyDef, type Sprite } from '../game/data'
+import { ELEMENTS, ENEMIES, EQUIP_MAP, SPECIES_MAP, counterMul, itemName, type Element, type EnemyDef, type Sprite } from '../game/data'
 import { spriteImage } from '../game/spriteImages'
 import { ENEMY_IMAGES, BOSS_IMAGE } from '../game/enemyImages'
 import treeUrl from '../assets/sticker/tree.png'
@@ -9,6 +9,8 @@ import hayUrl from '../assets/sticker/hay.png'
 import { BATTLE_BG } from '../game/battleBg'
 import type { GameApi } from '../game/useGame'
 import Icon from '../ui/Icon'
+import ItemBadge from '../ui/itemBadge'
+import { EQUIP_TINT } from '../ui/itemBadge'
 import { sfx } from '../game/audio'
 
 // 竖切：任意已孵化精灵可出战（含幼体）；幼体仅普攻，技能键另行禁用
@@ -665,7 +667,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
               const ex = EQUIP_MAP[loot.equip!]
               return ex ? (
                 <div className="mt-3 flex items-center gap-2 rounded-control border-hair border-butter/70 bg-butter/10 px-3 py-2">
-                  <span className="text-base leading-none">{ex.icon}</span>
+                  <ItemBadge id={ex.id} kind="equip" tint={EQUIP_TINT[ex.slot]} size={26} />
                   <span className="min-w-0 flex-1 truncate text-caption font-bold text-ink">{ex.name}</span>
                   <span className="pill-soft shrink-0 text-micro">专属装备</span>
                 </div>
@@ -675,7 +677,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
             <div className="mt-4 grid grid-cols-2 gap-2">
               {loot.items.map((it, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-control border-hair border-line bg-paper2 px-3 py-2">
-                  <span className="text-base leading-none">{itemIcon(it.id)}</span>
+                  <ItemBadge id={it.id} size={26} />
                   <span className="truncate text-caption text-ink">{itemName(it.id)}</span>
                   <span className="ml-auto num text-caption font-bold text-berry-deep">×{it.qty}</span>
                 </div>
