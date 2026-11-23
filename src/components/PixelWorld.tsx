@@ -663,14 +663,20 @@ export default function PixelWorld({ game }: { game: GameApi }) {
       })
       Array.from(st.animalWalkers.keys()).forEach(k => { if (!seen.has(k)) st.animalWalkers.delete(k) })
 
-      // ---- 同步小精灵：幼体都在农场里散步；有工作的精灵也现身（能看到它在干活）----
-      // 有工作的先上（最多 6 只），其余名额给最新的幼体/传说，保证新召唤的精灵能马上出现在牧场
-      const workers = g.sprites.filter(sp => !!sp.job).slice(0, 6)
-      const others = g.sprites
-        .filter(sp => !sp.job && SPECIES_MAP[sp.speciesId]?.stage === 'baby')
-        .slice(-6)
-        .reverse()
-      const companions = [...workers, ...others].slice(0, 10)
+      // ---- 同步小精灵：每只都在农场里露个脸 ----
+      // 优先级：限定/传说 > 正在干活 > 新获得的；总数上限 12（再多会挤满草地）
+      const rankOf = (sp: (typeof g.sprites)[number]) => {
+        const sp0 = SPECIES_MAP[sp.speciesId]
+        return (sp0?.line === 'limited' ? 2 : sp0?.rarity === 'legend' ? 1.5 : 0) + (sp.job ? 1 : 0)
+      }
+      const companions = g.sprites
+        .map((sp, idx) => ({ sp, idx }))
+        .sort((a, b) => {
+          const d = rankOf(b.sp) - rankOf(a.sp)
+          return d !== 0 ? d : b.idx - a.idx
+        })
+        .slice(0, 12)
+        .map(x => x.sp)
       const seenB = new Set<string>()
       companions.forEach(sp => {
         seenB.add(sp.id)
