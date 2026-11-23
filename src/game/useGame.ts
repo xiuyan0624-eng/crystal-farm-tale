@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ANIMALS, CROPS, CRYSTAL_Q, CROP_EXP, ELEMENTS, ELEMENT_LIST, EVOLVE_LEVEL, FERTILIZERS, JOBS,
   LIMITED_SPECIES, MAX_PLOTS, PLOT_LEVELS, QUALITIES, QUALITY_WEIGHTS, SPECIES_MAP,
-  babiesOf, calcStats, expForLevel, farmExpForLevel, itemIcon, itemName, jobEff, parseItem,
+  babiesOf, calcStats, expForLevel, farmExpForLevel, itemName, jobEff, parseItem,
   EQUIPS, EQUIP_MAP, MATERIALS, equipLevelMul, enhanceCost, EQUIP_MAX_LEVEL, PLOT_KINDS, plotExpandCost, rollCrystalQuality, specialsOf, STAR_LEVEL, STAR_SHARD_COST, STAR_SCALE_COST, STAR_MUL, SUMMON_COST,
   type PlotKind,
   type Element, type FeedStat, type JobId, type Rarity, type Sprite, type SpriteSpecies,
@@ -443,6 +443,7 @@ export function useGame() {
         const wb = workBonuses(s)
         let inv = { ...s.inventory }
         let invChanged = false
+        const actedIds: string[] = []
         const sprites = s.sprites.map(sp => {
           let cur = sp
           // 回血
@@ -492,7 +493,8 @@ export function useGame() {
             plots = plots.map((p, i) => (i === idx
               ? { ...p, waterCount: p.waterCount + 1, plantedAt: p.plantedAt - (adept ? crop!.growTime * 1000 * 0.02 : 0) }
               : p))
-            notify(`💧「${waterWorker.name}」给第 ${idx + 1} 块地浇了水${adept ? '（水系加成：额外长了一点）' : ''}`)
+            actedIds.push(waterWorker.id)
+            notify(`「${waterWorker.name}」给第 ${idx + 1} 块地浇了水${adept ? '（水系加成：额外长了一点）' : ''}`)
           }
         }
 
@@ -512,7 +514,8 @@ export function useGame() {
                 addItem(autoState.inventory, r.q === 1 ? r.crop.id : `${r.crop.id}_q${r.q}`, 1)
                 bonus = 1
               }
-              let msg = `🧺「${harvestWorker.name}」自己收了 ${r.crop.icon}${r.crop.name} ×${r.yieldN + bonus}`
+              actedIds.push(harvestWorker.id)
+              let msg = `「${harvestWorker.name}」自己收了 ${r.crop.name} ×${r.yieldN + bonus}`
               if (bonus) msg += '（木系加成 +1）'
               if (r.crystals > 0) msg += `，还捡到结晶×${r.crystals}`
               notify(msg)
@@ -539,7 +542,8 @@ export function useGame() {
                 extraMsg = `，土系加成顺手把第 ${second + 1} 块也施了`
               }
             }
-            notify(`🟫「${fertWorker.name}」用 1 袋普通肥料给第 ${pending + 1} 块地施了肥${extraMsg}`)
+            actedIds.push(fertWorker.id)
+            notify(`「${fertWorker.name}」用 1 袋普通肥料给第 ${pending + 1} 块地施了肥${extraMsg}`)
           }
         }
 
@@ -549,7 +553,8 @@ export function useGame() {
           const infested = plots.findIndex(p => p.pest)
           if (infested >= 0) {
             plots = plots.map((p, i) => (i === infested ? { ...p, pest: 0 } : p))
-            notify(`🔥「${pestWorker.name}」把第 ${infested + 1} 块地的虫赶跑了`)
+            actedIds.push(pestWorker.id)
+            notify(`「${pestWorker.name}」把第 ${infested + 1} 块地的虫赶跑了`)
           }
         }
 
@@ -569,7 +574,8 @@ export function useGame() {
               const gain = 35 + (q - 1) * 10 + (isAdept('feed', feedWorker) ? 10 : 0)
               const idx = animals.findIndex(a => a.uid === hungry.uid)
               animals = animals.map((a, i) => (i === idx ? { ...a, satiety: Math.min(100, a.satiety + gain) } : a))
-              notify(`🌾「${feedWorker.name}」喂了 ${def.name} ${itemIcon(pick)}${itemName(pick) || pick}（饱腹 +${Math.round(gain)}${isAdept('feed', feedWorker) ? '，木/土系加成' : ''}）`)
+              actedIds.push(feedWorker.id)
+              notify(`「${feedWorker.name}」喂了 ${def.name} ${itemName(pick) || pick}（饱腹 +${Math.round(gain)}${isAdept('feed', feedWorker) ? '，木/土系加成' : ''}）`)
             }
           }
         }
@@ -585,7 +591,8 @@ export function useGame() {
             if (def.fert && def.fertN) addItem(inv, def.fert, def.fertN)
             invChanged = true
             a.produceReady = 0
-            notify(`🛡️「${guardWorker.name}」帮你收了 ${def.produceIcon}${def.produceName} ×${got}`)
+            actedIds.push(guardWorker.id)
+            notify(`「${guardWorker.name}」帮你收了 ${def.produceName} ×${got}`)
           }
         }
 
@@ -594,7 +601,7 @@ export function useGame() {
           const el = ELEMENT_LIST[Math.floor(Math.random() * ELEMENT_LIST.length)]
           inv[`crystal_${el}`] = (inv[`crystal_${el}`] ?? 0) + 1
           invChanged = true
-          notify(`💎 采集精灵带回了一颗 ${ELEMENTS[el].icon}${ELEMENTS[el].name}结晶！`)
+          notify(`采集精灵带回了一颗 ${ELEMENTS[el].name}结晶！`)
         }
         // 农场工作经验：每30秒+1（平均每分钟+2）
         let finalSprites = sprites
@@ -611,6 +618,10 @@ export function useGame() {
             }
             return { ...sp, level, exp }
           })
+        }
+        if (actedIds.length) {
+          const now = Date.now()
+          finalSprites = finalSprites.map(sp => (actedIds.includes(sp.id) ? { ...sp, actedAt: now } : sp))
         }
         // 世界BOSS被全服玩家缓慢削血，打死后刷新
         let worldBossHp = s.worldBossHp - (Math.random() < 0.35 ? 1 + Math.floor(Math.random() * 6) : 0)
@@ -704,7 +715,7 @@ export function useGame() {
       price = Math.round(price * workBonuses(s).coinMul)
       const inv = { ...s.inventory }
       addItem(inv, itemId, -1)
-      notify(`卖出 ${itemIcon(itemId)}${itemName(itemId)}，+${price} 金币`)
+      notify(`卖出 ${itemName(itemId)}，+${price} 金币`)
       const sellLog = [...(s.sellLog ?? []), { id: itemId, price }].slice(-12)
       return { ...s, coins: s.coins + price, inventory: inv, sellLog }
     })
@@ -719,7 +730,7 @@ export function useGame() {
       if (s.coins < entry.price) { notify('金币不够买回这一件'); return s }
       const inv = { ...s.inventory }
       addItem(inv, entry.id, 1)
-      notify(`回购 ${itemIcon(entry.id)}${itemName(entry.id)}，-${entry.price} 金币`)
+      notify(`回购 ${itemName(entry.id)}，-${entry.price} 金币`)
       return { ...s, coins: s.coins - entry.price, inventory: inv, sellLog: log.filter((_, i) => i !== index) }
     })
   }, [notify, addItem])
@@ -766,7 +777,7 @@ export function useGame() {
       const inv = { ...s.inventory }
       addItem(inv, fertId, -1)
       const plots = s.plots.map((x, i) => i === plotIdx ? { ...x, fertilizer: (fertId === 'fert_rare' ? 2 : 1) as Plot['fertilizer'] } : x)
-      notify(`${fert.icon} 施了${fert.name}，品质权重+${Math.round(fert.qualAdd * 100)}%！`)
+      notify(`施了${fert.name}，品质权重+${Math.round(fert.qualAdd * 100)}%！`)
       return { ...s, plots, inventory: inv }
     })
   }, [notify, addItem])
@@ -937,7 +948,7 @@ export function useGame() {
       if (p.cropId) { notify('这块地还有作物，先收掉再改造'); return s }
       if (s.coins < def.price) { notify(`金币不够（需要 ${def.price}）`); return s }
       const plots = s.plots.map((x, i) => i === plotIdx ? { ...x, kind } : x)
-      notify(`${def.icon} 第 ${plotIdx + 1} 块地改造成${def.name}了`)
+      notify(`第 ${plotIdx + 1} 块地改造成${def.name}了`)
       return { ...s, plots, coins: s.coins - def.price }
     })
   }, [notify])
@@ -1021,7 +1032,7 @@ export function useGame() {
         sinceLegend: rarity === 'legend' ? 0 : pity.sinceLegend + 1,
       }
       const rName = { common: '普通', fine: '优质', rare: '稀有', epic: '史诗', legend: '传说' }[rarity]
-      notify(`🥚 ${ELEMENTS[element].icon}${ELEMENTS[element].name}系「${rName}」精灵蛋入孵！品质分${score}，约需 ${time >= 60 ? `${Math.round(time / 60)}分钟` : `${time}秒`}${pityMsg}`)
+      notify(`${ELEMENTS[element].name}系「${rName}」精灵蛋入孵！品质分${score}，约需 ${time >= 60 ? `${Math.round(time / 60)}分钟` : `${time}秒`}${pityMsg}`)
       const egg: SpriteEgg = { uid: uid(), element, rarity, hatchAt: Date.now() + time * 1000 }
       return { ...s, inventory: inv, eggs: [...s.eggs, egg], hatchPity: pity }
     })
@@ -1054,7 +1065,7 @@ export function useGame() {
       }
       const sprite = makeSprite(species, feedBonus)
       const tag = egg.rarity === 'legend' ? '👑 传说降临！' : egg.rarity === 'epic' ? '💜 史诗诞生！' : species.line === 'special' ? '🎉 稀有邂逅！特殊精灵' : species.rarity === 'fine' ? '🌟 优质幼体' : '🐣'
-      notify(`${tag}「${sprite.name}」破壳而出！（${ELEMENTS[egg.element].icon}${ELEMENTS[egg.element].name}系）`)
+      notify(`${tag}「${sprite.name}」破壳而出！（${ELEMENTS[egg.element].name}系）`)
       return { ...s, eggs: s.eggs.filter(e => e.uid !== eggUid), sprites: [...s.sprites, sprite], dex: Array.from(new Set([...s.dex, species.id])), lastHatch: sprite.id, lastHatchRarity: egg.rarity }
     })
   }, [notify])
@@ -1085,7 +1096,7 @@ export function useGame() {
       }
       const species = LIMITED_SPECIES[Math.floor(Math.random() * LIMITED_SPECIES.length)]
       const sprite = makeSprite(species)
-      notify(`👑 传说降临！${ELEMENTS[species.element].icon}「${species.name}」回应了你的召唤！`)
+      notify(`传说降临！「${species.name}」回应了你的召唤！`)
       return { ...s, inventory: inv, sprites: [...s.sprites, sprite], dex: Array.from(new Set([...s.dex, species.id])) }
     })
   }, [notify, addItem])
@@ -1119,7 +1130,7 @@ export function useGame() {
         const { sp, evolvedTo } = levelUpSprite({ ...x, level, exp, stats, stamina: Math.min(100, x.stamina + 30) })
         if (evolvedTo) {
           evolvedSpeciesId = sp.speciesId
-          setTimeout(() => notify(`🌟 「${x.name}」进化为 ${ELEMENTS[sp.element].icon}${evolvedTo}！`), 50)
+          setTimeout(() => notify(`「${x.name}」进化为 ${evolvedTo}！`), 50)
         }
         return sp
       })

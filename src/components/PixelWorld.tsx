@@ -39,7 +39,7 @@ import type { OwnerLook } from '../game/data'
 import { ANIMALS, CROPS, ELEMENTS, FERTILIZERS, PLOT_LEVELS, PLOT_KINDS, PLOT_KIND_LIST, MAX_PLOTS, QUALITIES, SPECIES_MAP, cropVariants, farmExpForLevel, itemIcon, itemName, ownerLook, parseItem, plotExpandCost, qualityOf } from '../game/data'
 import { SPRITE_IMAGES, ELEMENT_BLOBS, spriteImage } from '../game/spriteImages'
 import { beeBonus, isDry, plotProgress, workBonuses, type GameApi, type Plot } from '../game/useGame'
-import Icon from '../ui/Icon'
+import Icon, { type IconName } from '../ui/Icon'
 import { sfx } from '../game/audio'
 
 // 物品 → 贴纸图
@@ -325,6 +325,23 @@ interface Walker {
 function rand(seed: number) {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453
   return x - Math.floor(x)
+}
+
+
+/** 材料 / 肥料这类没有贴纸的物品，用统一的矢量图标，不再混用 emoji */
+function materialIconName(id: string): IconName {
+  const base = id.replace(/_q\d+$/, '')
+  if (base.startsWith('crystal_')) return 'gem'
+  switch (base) {
+    case 'fiber': return 'fiber'
+    case 'hide': return 'hide'
+    case 'dust': return 'dust'
+    case 'fang': return 'fang'
+    case 'scale': return 'scale'
+    case 'ember': return 'sparkle'
+    case 'fert': case 'fert_rare': return 'fert'
+    default: return 'leaf'
+  }
 }
 
 function drawWalker(ctx: CanvasRenderingContext2D, w: Walker, t: number) {
@@ -1390,9 +1407,9 @@ export default function PixelWorld({ game }: { game: GameApi }) {
         const sp = g.sprites.find(x => x.id === w.uid)
         if (!sp?.job) return
         if (!sp.job || sp.stamina <= 0) return
-        // 气泡闪一下就好，别一直挂着：每 4 秒出现 2.4 秒
-        const phase = (t * 0.9 + (w.x % 7)) % 4
-        if (phase < 0.7) return
+        // 只在真的干完一次活之后闪 2.2 秒，不再常驻
+        const acted = sp.actedAt ?? 0
+        if (!acted || Date.now() - acted > 2200) return
         drawJobBubble(ctx, w.x + w.size / 2, w.y - 12, sp.job as string, t)
       })
 
@@ -1804,11 +1821,16 @@ export default function PixelWorld({ game }: { game: GameApi }) {
                   {a.id === 'chicken' ? <img src={chickenUrl} className="h-11 object-contain" alt={a.name} />
                     : a.id === 'sheep' ? <img src={sheepUrl} className="h-11 object-contain" alt={a.name} />
                     : a.id === 'cow' ? <img src={cowUrl} className="h-11 object-contain" alt={a.name} />
-                    : <span className="art-silhouette text-3xl" aria-hidden>{a.icon}</span>}
+                    : <img src={beeUrl} className="h-11 object-contain" alt={a.name} />}
                 </div>
                 <div className="mt-0.5 text-caption font-semibold text-ink">{a.name}</div>
                 <div className="text-caption text-inksoft num">{a.price} 金币</div>
-                <div className="text-caption text-inksoft">吃 {a.foods.map(f => CROPS.find(c => c.id === f)?.icon).join(' ')}</div>
+                <div className="flex items-center justify-center gap-0.5 text-caption text-inksoft">
+                  吃
+                  {a.foods.map(f => ITEM_STICKERS[f]
+                    ? <img key={f} src={ITEM_STICKERS[f]} className="h-4 w-4 object-contain" alt={CROPS.find(c => c.id === f)?.name ?? f} />
+                    : <span key={f}>{CROPS.find(c => c.id === f)?.icon}</span>)}
+                </div>
                 {a.fert && <div className="text-caption text-inksoft">产 {FERTILIZERS.find(f => f.id === a.fert)?.name} ×{a.fertN}</div>}
                 {a.id === 'bee' && <div className="text-caption text-sage-deep">全场品质 +15%</div>}
               </button>
@@ -1845,7 +1867,7 @@ export default function PixelWorld({ game }: { game: GameApi }) {
                       ? <img src={stk} className="h-5 w-5 object-contain" alt="" />
                       : el
                         ? <Icon name="gem" size={16} style={{ color: ELEMENTS[el].color }} />
-                        : <span className="text-base leading-none">{itemIcon(id)}</span>}
+                        : <Icon name={materialIconName(id)} size={16} className="text-inksoft" />}
                     <span style={q.q > 1 ? { color: q.color } : undefined}>{itemName(id)}</span>
                     <span className="num text-inkfaint">×{n}</span>
                   </button>
@@ -1861,7 +1883,9 @@ export default function PixelWorld({ game }: { game: GameApi }) {
               {recentSales.map(({ entry, index }) => (
                 <button key={`${entry.id}-${index}`} onClick={() => { game.buyBack(entry.idx); sfx('coin') }}
                   className="chip px-2 py-1 hover:bg-paper2" title={`${itemName(entry.id)} · ${entry.price} 金币`}>
-                  {itemIcon(entry.id)}
+                  {itemSticker(entry.id)
+                    ? <img src={itemSticker(entry.id)} className="h-5 w-5 object-contain" alt="" />
+                    : <Icon name={materialIconName(entry.id)} size={15} className="text-inksoft" />}
                   <span>{itemName(entry.id)}</span>
                   <span className="num text-inkfaint">{entry.price}</span>
                   <span className="ml-0.5 text-micro text-[color:var(--berry)]">回购</span>

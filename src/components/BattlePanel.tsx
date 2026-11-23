@@ -298,7 +298,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     if (battle.enemy === 'boss' && battle.bossTotalDmg > 0) {
       const coins = Math.round(battle.bossTotalDmg / 15)
       battleWin(battle.team, 20, coins, [])
-      notify(`📦 BOSS战参与奖励：💰${coins} 金币`)
+      notify(`BOSS 战参与奖励：${coins} 金币`)
     }
     endBattle(battle)
   }

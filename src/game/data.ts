@@ -277,6 +277,7 @@ export interface Sprite {
   job?: JobId | null // 农场工作
   stamina: number    // 体力 0-100，工作消耗
   star?: boolean     // 星辰觉醒（究极体终盘形态）
+  actedAt?: number    // 上一次真正干活的时间戳（画布上据此闪一下工作图标）
 }
 
 // -------------------- 农场主装备 --------------------
