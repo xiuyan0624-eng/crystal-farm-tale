@@ -13,7 +13,7 @@ export type IconName =
   | 'close' | 'minus' | 'plus' | 'sparkle' | 'egg' | 'clock' | 'leaf' | 'refresh' | 'edit'
   | 'shield' | 'paw' | 'lock' | 'volume' | 'mute'
   | 'fert' | 'bug' | 'pail' | 'feed'
-  | 'fiber' | 'hide' | 'dust' | 'fang' | 'scale'
+  | 'fiber' | 'hide' | 'dust' | 'fang' | 'scale' | 'shirt'
 
 type IconProps = {
   name: IconName
@@ -135,6 +135,12 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="7.8" {...stroke} />
       <path d="M12 8.3v7.4M9.6 10.2h4.1a1.7 1.7 0 0 1 0 3.4H9.6" {...stroke} />
+    </>
+  ),
+  shirt: (
+    <>
+      <path d="M9 5.4 12 7l3-1.6 3.6 2.1-1.3 3-1.7-.7V19H8.4V9.8l-1.7.7-1.3-3L9 5.4Z" {...stroke} />
+      <path d="M9 5.4c.4 1.2 1.5 2 3 2s2.6-.8 3-2" {...stroke} />
     </>
   ),
   fiber: (

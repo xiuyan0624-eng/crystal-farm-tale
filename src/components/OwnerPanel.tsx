@@ -1,13 +1,41 @@
-import { EQUIPS, EQUIP_MAX_LEVEL, SLOT_NAME, enhanceCost, equipById, equipLevelMul, itemIcon, itemName, ownerLook, type EquipSlot } from '../game/data'
+import { EQUIPS, EQUIP_MAX_LEVEL, SLOT_NAME, enhanceCost, equipById, equipLevelMul, itemName, ownerLook, type EquipSlot } from '../game/data'
 import { ownerImage } from '../game/ownerArt'
 import { workBonuses, type GameApi } from '../game/useGame'
-import Icon from '../ui/Icon'
+import Icon, { type IconName } from '../ui/Icon'
 import { sfx } from '../game/audio'
 
 const SLOTS: EquipSlot[] = ['tool', 'outfit', 'charm']
 const LOOK_NAME = { classic: '亚麻', cream: '绣花', star: '星辉', rain: '雨衣', festival: '祭典', winter: '冬装' } as const
 
 /** 农场主：装备 + 外观。装备只加农场收益，不改战斗数值，避免和精灵养成打架。 */
+
+/** 装备与材料统一用「色标底盘 + 白色矢量图标」，和背包里的一致 */
+const EQUIP_TINT: Record<string, string> = { tool: '#B08356', outfit: '#C98BA0', charm: '#C9A227' }
+const MATERIAL_TINT: Record<string, string> = {
+  fiber: '#9DBE7C', hide: '#C68C5A', dust: '#C9A227', fang: '#C9744F', scale: '#D37A96',
+  ember: '#E0803C', fert: '#8C7A62', fert_rare: '#7C9B64',
+}
+function equipIconName(id: string): IconName {
+  if (id.startsWith('hoe')) return 'shovel'
+  if (id.startsWith('bell')) return 'sparkle'
+  if (/^(apron|dress|coat|kimono)/.test(id)) return 'shirt'
+  return 'gem'
+}
+function materialIconName(id: string): IconName {
+  const base = id.replace(/_q\d+$/, '')
+  if (base.startsWith('crystal_')) return 'gem'
+  switch (base) {
+    case 'fiber': return 'fiber'
+    case 'hide': return 'hide'
+    case 'dust': return 'dust'
+    case 'fang': return 'fang'
+    case 'scale': return 'scale'
+    case 'ember': return 'sparkle'
+    case 'fert': case 'fert_rare': return 'fert'
+    default: return 'leaf'
+  }
+}
+
 export default function OwnerPanel({ game }: { game: GameApi }) {
   const { state, equipItem, unequipSlot, enhanceEquip, craftCharm } = game
   const owned = state.ownedEquips ?? []
@@ -68,7 +96,9 @@ export default function OwnerPanel({ game }: { game: GameApi }) {
                   return (
                     <>
                       <div className="mt-1 flex items-center gap-1.5 text-caption font-bold text-ink">
-                        <span className="text-base leading-none">{def.icon}</span>
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: EQUIP_TINT[def.slot] }}>
+                          <Icon name={equipIconName(def.id)} size={13} className="text-[color:#FFFDF8]" />
+                        </span>
                         {def.name}
                         {lv > 0 && <span className="pill-soft text-micro text-butter-deep">+{lv}</span>}
                       </div>
@@ -80,7 +110,7 @@ export default function OwnerPanel({ game }: { game: GameApi }) {
                           <>
                             {cost.map(c => (
                               <span key={c.id} className={`chip text-micro ${(state.inventory[c.id] ?? 0) >= c.qty ? '' : 'text-inkfaint'}`}>
-                                {itemIcon(c.id)}{itemName(c.id)} {state.inventory[c.id] ?? 0}/{c.qty}
+                                {itemName(c.id)} {state.inventory[c.id] ?? 0}/{c.qty}
                               </span>
                             ))}
                             <button
@@ -140,7 +170,10 @@ export default function OwnerPanel({ game }: { game: GameApi }) {
             const have = state.inventory[c.id] ?? 0
             return (
               <span key={c.id} className={`chip ${have >= c.qty ? '' : 'opacity-50'}`}>
-                <span className="text-base leading-none">{itemIcon(c.id)}</span>
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full"
+                  style={{ background: MATERIAL_TINT[c.id.replace(/_q\d+$/, '')] ?? '#B9AE9A' }}>
+                  <Icon name={materialIconName(c.id)} size={13} className="text-[color:#FFFDF8]" />
+                </span>
                 {itemName(c.id)} {have}/{c.qty}
               </span>
             )
@@ -180,7 +213,9 @@ export default function OwnerPanel({ game }: { game: GameApi }) {
                           className={`chip ${on ? 'chip-active' : 'hover:bg-paper2'}`}
                           title={d.desc}
                         >
-                          <span className="text-base leading-none">{d.icon}</span>
+                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: EQUIP_TINT[d.slot] }}>
+                            <Icon name={equipIconName(d.id)} size={13} className="text-[color:#FFFDF8]" />
+                          </span>
                           {d.name}
                           {on && <span className="micro text-sage-deep">已穿</span>}
                         </button>
