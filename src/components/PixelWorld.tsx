@@ -132,7 +132,7 @@ const LAYOUTS: Record<'a' | 'b' | 'c' | 'd', LayoutDef> = {
     barn: { x: 430, y: 2, w: 218, h: 200 },
     path: [[556, 186], [520, 300], [596, 404], [716, 466]],
     pastureGate: 720,
-    companionBand: { x1: 430, x2: 704, y1: 250, y2: 606 },
+    companionBand: { x1: 430, x2: 704, y1: 238, y2: 452 },
     deco: [
       { key: 'tree', x: 1164, y: 8, w: 116, h: 142 },
       { key: 'hay', x: 662, y: 178, w: 72, h: 52 },
@@ -179,7 +179,7 @@ const WALKER_SCALE = LAYOUT.walkerScale ?? 1
 const PLOT_SIZE = LAYOUT.plotSize ?? 88
 const PASTURE = LAYOUT.pasture
 // 默认带放在画布中段草地上：底部 y635+ 会被「选种子/一键浇水」浮层挡住
-const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 400, x2: 700, y1: 250, y2: 600 }
+const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 380, x2: 690, y1: 240, y2: 405 }
 
 /** 地块分区：左上 2×2 温室、右下 2×2 池塘，其余是普通田 */
 const GRID_COLS = LAYOUT.grid.cols ?? PLOT_COLS
