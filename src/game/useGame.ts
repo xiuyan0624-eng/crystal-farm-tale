@@ -753,6 +753,31 @@ export function useGame() {
     })
   }, [notify, addItem])
 
+  /** 一键补种：把空地按「现有种子最多的、当前等级与地块类型允许的」作物补上 */
+  const replantAll = useCallback(() => {
+    setState(s => {
+      const inv = { ...s.inventory }
+      const plots = [...s.plots]
+      let n = 0
+      for (let i = 0; i < plots.length; i++) {
+        const p = plots[i]
+        if (p.cropId) continue
+        const kind = p.kind ?? 'soil'
+        const cands = CROPS
+          .filter(c => s.farmLevel >= c.unlockLv && (!c.onlyKind || c.onlyKind === kind) && (inv[`seed_${c.id}`] ?? 0) > 0)
+          .sort((a, b) => (inv[`seed_${b.id}`] ?? 0) - (inv[`seed_${a.id}`] ?? 0))
+        if (!cands.length) break
+        const c = cands[0]
+        addItem(inv, `seed_${c.id}`, -1)
+        plots[i] = { ...p, cropId: c.id, plantedAt: Date.now(), waterCount: 0, fertilizer: 0 as Plot['fertilizer'] }
+        n += 1
+      }
+      if (!n) { notify('没有可补种的空地或种子'); return s }
+      notify(`一键补种：${n} 块地已经重新播上`)
+      return { ...s, plots, inventory: inv }
+    })
+  }, [notify, addItem])
+
   const water = useCallback((plotIdx: number) => {
     setState(s => {
       const p = s.plots[plotIdx]
@@ -1371,7 +1396,7 @@ export function useGame() {
 
   return {
     state, toasts, notify,
-    buySeed, buyAnimal, sellItem, buyBack,
+    buySeed, buyAnimal, sellItem, buyBack, replantAll,
     plant, water, fertilize, harvest, clearPest, upgradePlot, expandPlot, waterAll, harvestAll,
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,

@@ -1582,6 +1582,8 @@ export default function PixelWorld({ game }: { game: GameApi }) {
   // 浮条上的批量按钮计数
   const waterNeed = state.plots.filter(p => p.cropId && p.waterCount < 3).length
   const readyCount = state.plots.filter(p => p.cropId && plotProgress(p, wb) >= 1).length
+  const emptyCount = state.plots.filter(p => !p.cropId).length
+  const seedKinds = Object.keys(state.inventory).filter(k => k.startsWith('seed_') && (state.inventory[k] ?? 0) > 0).length
 
   // 物品贴纸图（带品质后缀的 id 也能匹配）
   const itemSticker = (id: string) => {
@@ -1733,6 +1735,11 @@ export default function PixelWorld({ game }: { game: GameApi }) {
             <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvest'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs flex-none whitespace-nowrap">
               <Icon name="basket" size={13} />
               一键收获{readyCount > 0 ? ` ${readyCount}` : ''}
+            </button>
+            <button onClick={() => { setPopup(null); sfx('plant'); game.replantAll() }} disabled={emptyCount === 0 || seedKinds === 0}
+              className="btn-soft btn-xs flex-none whitespace-nowrap" title="用背包里最多的种子，把空地一次性补上">
+              <Icon name="leaf" size={13} />
+              一键补种{emptyCount > 0 ? ` ${emptyCount}` : ''}
             </button>
           </div>
         </div>
