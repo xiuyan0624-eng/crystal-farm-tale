@@ -1,20 +1,19 @@
 {
   "path": "/Users/wfxy/Documents/deepseek-harness/default-workspace/farm-tale-src/src/assets/audio/bgm.mp3",
   "format": "mp3",
-  "durationSeconds": 60,
+  "durationSeconds": 58,
   "bpm": 92,
   "key": "F",
   "mode": "major",
-  "seed": 1348965827,
+  "seed": 2542419024,
   "peak": 0.8,
   "instruments": [
     "saw",
-    "808",
     "clap",
     "shaker"
   ],
   "rhythm": "pop",
-  "prompt": "8-bit chiptune farm theme（回到 8-bit 版）",
+  "prompt": "8-bit chiptune，无底鼓、无超低频，拍子只靠轻拍手与沙锤",
   "generatedAt": "2026-11-21T10:24:21.310Z",
-  "postprocess": "68Hz -7dB / 110Hz -3dB（低音） + 2.8kHz -4dB / 6.5kHz treble -3dB（压电子琴的刺） + 3.5dB makeup + limiter 0.8"
+  "postprocess": "去掉 808 底鼓与 2s 前奏（-ss 1.9），highpass 50Hz，-2.5dB，首尾 40/80ms 淡入淡出保证循环"
 }
