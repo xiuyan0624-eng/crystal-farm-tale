@@ -6,7 +6,7 @@
   "key": "F",
   "mode": "major",
   "seed": 1348965827,
-  "peak": 0.501,
+  "peak": 0.85,
   "instruments": [
     "saw",
     "808",
@@ -15,5 +15,6 @@
   ],
   "rhythm": "pop",
   "prompt": "8-bit chiptune farm theme, cheerful and bouncy, square-wave-like lead, plucky arpeggios, triangle bass, light noise percussion, 92 BPM, F major, loopable, no vocals",
-  "generatedAt": "2026-11-21T10:24:21.310Z"
+  "generatedAt": "2026-11-21T10:24:21.310Z",
+  "postprocess": "highpass 42Hz + EQ -7dB @68Hz, -3dB @110Hz, +5dB makeup, limiter 0.9 —— 压低 808 低音"
 }
