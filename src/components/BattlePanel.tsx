@@ -111,7 +111,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       const sp = state.sprites.find(s => s.id === id)!
       hpMap[id] = sp.hp
     })
-    const enemyName = isBoss ? '🐲 世界BOSS·苍穹古龙王（全服共斗）' : `${(enemy as EnemyDef).icon}${(enemy as EnemyDef).name}`
+    const enemyName = isBoss ? '世界BOSS·苍穹古龙王（全服共斗）' : (enemy as EnemyDef).name
     setBattle({
       enemy,
       enemyHp: isBoss ? state.worldBossHp : (enemy as EnemyDef).hp,
@@ -240,7 +240,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       sfx('win')
       const gotExclusive = !!ed.exclusive && !state.ownedEquips.includes(ed.exclusive)
       battleWin(b.team, ed.expReward, ed.coinReward, ed.crystalReward, false, items, ed.exclusive, ed.id)
-      setLoot({ title: `${ed.icon}${ed.name}`, exp: ed.expReward, coins: ed.coinReward, crystals: ed.crystalReward, items, equip: gotExclusive ? ed.exclusive : undefined })
+      setLoot({ title: ed.name, exp: ed.expReward, coins: ed.coinReward, crystals: ed.crystalReward, items, equip: gotExclusive ? ed.exclusive : undefined })
       setBattle(b)
       setTimeout(() => endBattle(b), 1200)
       return

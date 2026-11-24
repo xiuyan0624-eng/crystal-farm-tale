@@ -97,7 +97,7 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
         <span className="sticker-tile-lg shrink-0">
           {img
             ? <img src={img} className={`h-[50px] w-[50px] object-contain ${sprite.star ? 'star-art' : ''}`} alt={species.name} />
-            : <span className="text-2xl">{species.icon}</span>}
+            : <Icon name="gem" size={30} style={{ color: ELEMENTS[species.element].color }} />}
         </span>
 
         <div className="min-w-0 flex-1">
