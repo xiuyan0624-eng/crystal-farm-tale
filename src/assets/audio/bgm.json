@@ -1,19 +1,19 @@
 {
   "path": "/Users/wfxy/Documents/deepseek-harness/default-workspace/farm-tale-src/src/assets/audio/bgm.mp3",
   "format": "mp3",
-  "durationSeconds": 58,
+  "durationSeconds": 59.9,
   "bpm": 92,
   "key": "F",
   "mode": "major",
-  "seed": 2542419024,
-  "peak": 0.8,
+  "seed": 0,
+  "peak": 0.79,
   "instruments": [
-    "saw",
-    "clap",
-    "shaker"
+    "music box",
+    "marimba",
+    "flute"
   ],
   "rhythm": "pop",
-  "prompt": "8-bit chiptune，无底鼓、无超低频，拍子只靠轻拍手与沙锤",
+  "prompt": "原创作曲：音乐盒主旋律（A/B 两段轮换）+ 马林巴琶音 + 长笛衬底，92 BPM / F 大调，无鼓无贝斯",
   "generatedAt": "2026-11-21T10:24:21.310Z",
-  "postprocess": "去掉 808 底鼓与 2s 前奏（-ss 1.9），highpass 50Hz，-2.5dB，首尾 40/80ms 淡入淡出保证循环"
+  "postprocess": "SoundFont 渲染 → highpass 60Hz、+4dB、峰值 -2.1dB、首尾淡入淡出"
 }
