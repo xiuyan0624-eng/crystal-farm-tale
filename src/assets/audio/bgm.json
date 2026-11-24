@@ -5,15 +5,16 @@
   "bpm": 92,
   "key": "F",
   "mode": "major",
-  "seed": 3603553482,
-  "peak": 0.73,
+  "seed": 1348965827,
+  "peak": 0.8,
   "instruments": [
-    "bell",
-    "rim",
-    "marimba"
+    "saw",
+    "808",
+    "clap",
+    "shaker"
   ],
   "rhythm": "pop",
-  "prompt": "铃铛 + 马林巴主奏、拨弦伴奏、无鼓组，92 BPM / F 大调，空灵温暖",
+  "prompt": "8-bit chiptune farm theme（回到 8-bit 版）",
   "generatedAt": "2026-11-21T10:24:21.310Z",
-  "postprocess": "highpass 45Hz + EQ -2.5dB @100Hz + 1.5dB makeup + limiter 0.9（去掉 808 鼓，换铃铛）"
+  "postprocess": "68Hz -7dB / 110Hz -3dB（低音） + 2.8kHz -4dB / 6.5kHz treble -3dB（压电子琴的刺） + 3.5dB makeup + limiter 0.8"
 }
