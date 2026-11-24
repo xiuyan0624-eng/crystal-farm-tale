@@ -71,6 +71,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
   const [selectedEnemy, setSelectedEnemy] = useState<string | null>(null)
   const [auto, setAuto] = useState(false)
   const [loot, setLoot] = useState<{ title: string; exp: number; coins: number; crystals: Element[]; items: { id: string; qty: number }[]; equip?: string } | null>(null)
+  const [allyFx, setAllyFx] = useState<{ k: 'lunge' | 'hurt'; n: number } | null>(null)
+  const [enemyFx, setEnemyFx] = useState<{ k: 'hurt'; n: number } | null>(null)
   const [floaters, setFloaters] = useState<{ id: number; text: string; side: 'left' | 'right'; kind: 'hit' | 'crit' | 'hurt' | 'heal' }[]>([])
   const floaterId = useRef(0)
   const enteredRef = useRef(false)
@@ -80,6 +82,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     setFloaters(fs => [...fs.slice(-6), { id, text, side, kind }])
     setTimeout(() => setFloaters(fs => fs.filter(f => f.id !== id)), 1150)
   }
+  const fxAlly = (k: 'lunge' | 'hurt') => setAllyFx({ k, n: Date.now() })
+  const fxEnemy = () => setEnemyFx({ k: 'hurt', n: Date.now() })
   const activeRef = useRef(active)
   activeRef.current = active
 
@@ -117,7 +121,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       enemyHp: isBoss ? state.worldBossHp : (enemy as EnemyDef).hp,
       enemyMax: isBoss ? state.worldBossMax : (enemy as EnemyDef).hp,
       team, hpMap, activeIdx: 0, energy: 1,
-      log: [`⚔️ ${team.length}只精灵小队遭遇了 ${enemyName}！`],
+      log: [`${team.length}只精灵小队遭遇了 ${enemyName}！`],
       defending: false, over: false, bossTotalDmg: 0,
     })
     setSelectedEnemy(null)
@@ -162,41 +166,46 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       if (species.line === 'support' && myHp < cur.maxHp * 0.78) {
         const healAmt = Math.round(cur.maxHp * 0.06)
         b.hpMap[cur.id] = Math.min(cur.maxHp, myHp + healAmt)
-        b = pushLog(b, `💚 功能线的庇护：「${cur.name}」回复 ${healAmt} 点生命`)
+        b = pushLog(b, `功能线的庇护：「${cur.name}」回复 ${healAmt} 点生命`)
         popFloater(`+${healAmt}`, 'left', 'heal')
       }
 
       if (kind === 'defend') {
         b.defending = true
-        b = pushLog(b, `🛡️ 「${cur.name}」摆出了防御姿态！`)
+        b = pushLog(b, `防御：「${cur.name}」摆出了防御姿态！`)
       } else if (kind === 'skill') {
+        fxAlly('lunge')
         if (!skill) { notify('这只精灵没有技能！'); return 'ok' }
         if (b.energy < 3) { notify('能量不足！大招需要 3 点能量'); return 'ok' }
         b.energy -= 3
         if (skill.kind === 'heal') {
           const healAmt = Math.round(cur.maxHp * skill.mul)
           b.hpMap[cur.id] = Math.min(cur.maxHp, b.hpMap[cur.id] + healAmt)
-          b = pushLog(b, `💚 ${skill.name}：回复 ${healAmt} 点生命（${skill.desc}）`)
+          b = pushLog(b, `${skill.name}：回复 ${healAmt} 点生命（${skill.desc}）`)
         } else {
           const mul = counterMul(cur.element, enemyEl)
           const dmg = Math.max(1, Math.round(cur.atk * skill.mul * mul - (enemyDef?.def ?? 20) * 0.5))
           b.enemyHp = Math.max(0, b.enemyHp - dmg)
           b.bossTotalDmg += dmg
-          b = pushLog(b, `✨ ${skill.name}${mul > 1 ? '（克制！）' : mul < 1 ? '（属性不利…）' : ''}：对 ${enemyName} 造成 ${dmg} 点伤害`)
+          b = pushLog(b, `${skill.name}${mul > 1 ? '（克制！）' : mul < 1 ? '（属性不利…）' : ''}：对 ${enemyName} 造成 ${dmg} 点伤害`)
           popFloater(`-${dmg}`, 'right', 'crit')
+          fxEnemy()
           if (b.enemy === 'boss') damageWorldBoss(dmg)
         }
       } else {
+        fxAlly('lunge')
         const mul = counterMul(cur.element, enemyEl)
         let dmg = Math.max(1, Math.round(cur.atk * mul - (enemyDef?.def ?? 20) * 0.5))
-        let tag = '👊 普通攻击'
-        if (isAttackLine && Math.random() < 0.3) { dmg *= 2; tag = '⚔️ 会心暴击！！' }
+        let tag = '普通攻击'
+        let critFlag = false
+        if (isAttackLine && Math.random() < 0.3) { dmg *= 2; tag = '会心暴击！'; critFlag = true }
         if (mul > 1) tag += '（克制！）'
         else if (mul < 1) tag += '（属性不利…）'
         b.enemyHp = Math.max(0, b.enemyHp - dmg)
         b.bossTotalDmg += dmg
         b = pushLog(b, `${tag}：「${cur.name}」对 ${enemyName} 造成 ${dmg} 点伤害`)
-        popFloater(`-${dmg}`, 'right', tag.startsWith('⚔️') ? 'crit' : 'hit')
+        popFloater(`-${dmg}`, 'right', critFlag ? 'crit' : 'hit')
+        fxEnemy()
         if (b.enemy === 'boss') damageWorldBoss(dmg)
       }
 
@@ -207,8 +216,9 @@ export default function BattlePanel({ game, active = true, onStatus }: {
         let edmg = Math.max(1, Math.round(eatk * emul - cur.def * 0.5))
         if (b.defending) { edmg = Math.round(edmg * 0.4); b.defending = false }
         b.hpMap[cur.id] = Math.max(0, b.hpMap[cur.id] - edmg)
-        b = pushLog(b, `💢 ${enemyName} 反击${emul > 1 ? '（克制你！）' : ''}，对「${cur.name}」造成 ${edmg} 点伤害`)
+        b = pushLog(b, `${enemyName} 反击${emul > 1 ? '（克制你！）' : ''}，对「${cur.name}」造成 ${edmg} 点伤害`)
         popFloater(`-${edmg}`, 'left', 'hurt')
+        fxAlly('hurt')
       }
       // 能量回复
       b.energy = Math.min(3, b.energy + 1)
@@ -225,7 +235,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       if (nx >= 0 && b.team[nx] !== sp.id) {
         b.activeIdx = nx
         const nsp = state.sprites.find(s => s.id === b.team[nx])!
-        b = pushLog(b, `✨ 「${nsp.name}」接替上场！`)
+        b = pushLog(b, `「${nsp.name}」接替上场！`)
       }
     }
 
@@ -362,12 +372,14 @@ export default function BattlePanel({ game, active = true, onStatus }: {
           {/* 敌人（右） */}
           <div className="absolute bottom-[24px] right-[12%] flex flex-col items-center">
             <span className="pointer-events-none absolute -bottom-1 h-3 w-20 rounded-[50%] bg-ink/[0.10]" />
-            <img
-              src={isBoss ? BOSS_IMAGE : (ENEMY_IMAGES[ed!.id] ?? BOSS_IMAGE)}
-              alt={isBoss ? '苍穹古龙王' : ed!.name}
-              className={`${isBoss ? 'h-40' : 'h-32'} object-contain drop-shadow`}
-              style={!isBoss && ed?.tint ? { filter: ed.tint } : undefined}
-            />
+            <span key={enemyFx?.n ?? 0} className={enemyFx ? 'fx-hurt' : ''}>
+              <img
+                src={isBoss ? BOSS_IMAGE : (ENEMY_IMAGES[ed!.id] ?? BOSS_IMAGE)}
+                alt={isBoss ? '苍穹古龙王' : ed!.name}
+                className={`${isBoss ? 'h-40' : 'h-32'} object-contain drop-shadow`}
+                style={!isBoss && ed?.tint ? { filter: ed.tint } : undefined}
+              />
+            </span>
             <div className="mt-1 flex items-center gap-1 rounded-full bg-paper2/95 px-2 py-0.5 text-micro font-bold text-ink">
               <ElementDot el={enemyEl} />
               {isBoss ? '苍穹古龙王' : ed!.name}
@@ -426,7 +438,9 @@ export default function BattlePanel({ game, active = true, onStatus }: {
           {/* 我方精灵（左） */}
           <div className="absolute bottom-[24px] left-[13%] flex flex-col items-center">
             <span className="pointer-events-none absolute bottom-0 h-3.5 w-24 rounded-[50%] bg-ink/[0.12] blur-[1px]" />
-            {spriteFace(activeSprite, 'h-32 w-32')}
+            <span key={allyFx?.n ?? 0} className={allyFx ? (allyFx.k === 'lunge' ? 'fx-lunge' : 'fx-hurt') : ''}>
+              {spriteFace(activeSprite, 'h-32 w-32')}
+            </span>
             <div className="mt-0.5 rounded-full bg-paper2/90 px-2 py-0.5 text-micro text-inksoft">我方</div>
           </div>
         </div>

@@ -286,3 +286,19 @@
   from { translate: 0 0; }
   to { translate: 0 -6px; }
 }
+
+/* 战斗出手 / 受击 */
+@keyframes fx-lunge {
+  0% { transform: translateX(0) scale(1); }
+  35% { transform: translateX(26px) scale(1.05); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes fx-hurt {
+  0% { filter: none; transform: translateX(0); }
+  18% { filter: brightness(1.9) saturate(0.35); transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  62% { transform: translateX(-4px); }
+  100% { filter: none; transform: translateX(0); }
+}
+.fx-lunge { animation: fx-lunge .3s ease-out; }
+.fx-hurt { animation: fx-hurt .34s ease-out; }
