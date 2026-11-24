@@ -28,7 +28,7 @@ function ensure(): Ctx | null {
   master.gain.value = muted ? 0 : 1
   master.connect(ctx.destination)
   sfxGain = ctx.createGain()
-  sfxGain.gain.value = 0.55
+  sfxGain.gain.value = 0.92
   sfxGain.connect(master)
   return ctx
 }
@@ -85,16 +85,36 @@ export function sfx(name: SfxName): void {
   try {
     switch (name) {
       case 'click': tone(c, { f: 760, dur: 0.06, gain: 0.10, type: 'triangle' }); break
-      case 'plant': tone(c, { f: 220, f2: 140, dur: 0.16, gain: 0.20, type: 'sine' }); noise(c, { dur: 0.12, gain: 0.10, from: 700, to: 300 }); break
-      case 'water': noise(c, { dur: 0.34, gain: 0.16, from: 1600, to: 520, q: 0.7 }); tone(c, { f: 520, f2: 780, dur: 0.2, gain: 0.05 }); break
-      case 'fertilize': tone(c, { f: 300, f2: 240, dur: 0.18, gain: 0.12, type: 'triangle' }); noise(c, { dur: 0.2, gain: 0.08, from: 500, to: 260 }); break
-      case 'harvest': [523, 659, 784].forEach((f, i) => tone(c, { f, dur: 0.22, gain: 0.14, type: 'triangle', at: i * 0.055 })); break
+      case 'plant':
+        tone(c, { f: 240, f2: 150, dur: 0.18, gain: 0.20, type: 'sine' })
+        noise(c, { dur: 0.16, gain: 0.14, from: 900, to: 260 })
+        tone(c, { f: 900, f2: 1200, dur: 0.10, gain: 0.06, type: 'triangle', at: 0.05 })
+        break
+      case 'water':
+        noise(c, { dur: 0.42, gain: 0.20, from: 1900, to: 480, q: 0.7 })
+        // 水滴回落：三颗递低的清脆音，像水落在土上
+        ;[1400, 1180, 980].forEach((f, i) => tone(c, { f, f2: f * 0.72, dur: 0.14, gain: 0.10, at: 0.02 + i * 0.07 }))
+        tone(c, { f: 420, f2: 300, dur: 0.3, gain: 0.06, type: 'sine' })
+        break
+      case 'fertilize':
+        tone(c, { f: 300, f2: 240, dur: 0.18, gain: 0.14, type: 'triangle' })
+        noise(c, { dur: 0.24, gain: 0.12, from: 700, to: 220 })
+        tone(c, { f: 1174, dur: 0.16, gain: 0.06, at: 0.06 })
+        break
+      case 'harvest':
+        // 拔起来的一声 + 三音上行
+        noise(c, { dur: 0.14, gain: 0.12, from: 900, to: 300 })
+        ;[523, 659, 784, 1046].forEach((f, i) => tone(c, { f, dur: i === 3 ? 0.3 : 0.2, gain: 0.15, type: 'triangle', at: 0.04 + i * 0.05 }))
+        break
       case 'coin': tone(c, { f: 1318, dur: 0.10, gain: 0.14, type: 'square' }); tone(c, { f: 1760, dur: 0.14, gain: 0.12, type: 'square', at: 0.06 }); break
       case 'crystal': tone(c, { f: 1046, dur: 0.6, gain: 0.12 }); tone(c, { f: 1568, dur: 0.5, gain: 0.07, at: 0.02 }); break
       case 'buy': tone(c, { f: 880, dur: 0.08, gain: 0.12, type: 'triangle' }); tone(c, { f: 1174, dur: 0.12, gain: 0.10, type: 'triangle', at: 0.05 }); break
       case 'hatch': tone(c, { f: 300, f2: 1200, dur: 0.45, gain: 0.16 }); noise(c, { dur: 0.18, gain: 0.14, from: 2200, to: 600, at: 0.5 }); tone(c, { f: 1318, dur: 0.4, gain: 0.12, at: 0.55 }); break
       case 'levelup': [523, 659, 784, 1046].forEach((f, i) => tone(c, { f, dur: 0.3, gain: 0.13, type: 'triangle', at: i * 0.09 })); break
-      case 'feed': tone(c, { f: 420, f2: 560, dur: 0.12, gain: 0.12, type: 'triangle' }); break
+      case 'feed':
+        tone(c, { f: 420, f2: 560, dur: 0.12, gain: 0.14, type: 'triangle' })
+        noise(c, { dur: 0.1, gain: 0.09, from: 2600, to: 1400 })
+        break
       case 'job': tone(c, { f: 660, f2: 880, dur: 0.14, gain: 0.10, type: 'triangle' }); break
       case 'hit': noise(c, { dur: 0.16, gain: 0.20, from: 1200, to: 200, q: 0.6 }); tone(c, { f: 140, f2: 70, dur: 0.2, gain: 0.20 }); break
       case 'skill': noise(c, { dur: 0.3, gain: 0.12, from: 400, to: 2400, q: 1.2 }); tone(c, { f: 880, f2: 1320, dur: 0.3, gain: 0.10, type: 'triangle', at: 0.06 }); break
@@ -156,7 +176,7 @@ export function toggleMuted(): boolean {
   try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0') } catch { /* 内存回退 */ }
   if (master) master.gain.value = muted ? 0 : 1
   if (bgmEl) {
-    bgmEl.volume = muted ? 0 : 0.26
+    bgmEl.volume = muted ? 0 : 0.17
     if (muted) bgmEl.pause()
     else if (bgmWanted) void bgmEl.play().catch(() => undefined)
   }

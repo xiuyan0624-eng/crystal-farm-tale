@@ -1542,6 +1542,7 @@ export default function PixelWorld({ game }: { game: GameApi }) {
     const st = sceneRef.current!
     const w = st.animalWalkers.get(uid)
     if (!w) return
+    sfx(act.kind === 'feedAnimal' ? 'feed' : 'coin')
     st.pending = { ...act, animalUid: uid, tx: w.x + w.size / 2 - 44, ty: w.y + w.size + 6 }
     walkFarmerTo(st.pending.tx, st.pending.ty)
     setPopup(null)
