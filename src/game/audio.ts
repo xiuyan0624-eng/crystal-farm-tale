@@ -76,6 +76,7 @@ function noise(c: Ctx, opts: { dur: number; gain?: number; from?: number; to?: n
 export type SfxName =
   | 'click' | 'plant' | 'water' | 'fertilize' | 'harvest' | 'coin' | 'crystal'
   | 'buy' | 'hatch' | 'levelup' | 'feed' | 'job' | 'hit' | 'skill' | 'win' | 'lose' | 'error'
+  | 'waterAll' | 'harvestAll'
 
 /** 播一个音效；音频还没解锁时静默跳过（不会报错） */
 export function sfx(name: SfxName): void {
@@ -96,6 +97,21 @@ export function sfx(name: SfxName): void {
         ;[1400, 1180, 980].forEach((f, i) => tone(c, { f, f2: f * 0.72, dur: 0.14, gain: 0.10, at: 0.02 + i * 0.07 }))
         tone(c, { f: 420, f2: 300, dur: 0.3, gain: 0.06, type: 'sine' })
         break
+      case 'waterAll': {
+        // 一片地扫过去：连续水滴，音高先升后落
+        const fs = [1250, 1380, 1500, 1420, 1300, 1180, 1080]
+        fs.forEach((f, i) => tone(c, { f, f2: f * 0.74, dur: 0.13, gain: 0.085, at: i * 0.06 }))
+        noise(c, { dur: 0.5, gain: 0.16, from: 2100, to: 520, q: 0.8 })
+        break
+      }
+      case 'harvestAll': {
+        // 连续收菜：快速上行琶音，收尾一颗金币
+        const notes = [523, 587, 659, 784, 880, 1046, 1174, 1318]
+        notes.forEach((f, i) => tone(c, { f, dur: 0.16, gain: 0.11, type: 'triangle', at: i * 0.055 }))
+        noise(c, { dur: 0.3, gain: 0.10, from: 1100, to: 320 })
+        tone(c, { f: 1568, dur: 0.18, gain: 0.10, type: 'square', at: 0.5 })
+        break
+      }
       case 'fertilize':
         tone(c, { f: 300, f2: 240, dur: 0.18, gain: 0.14, type: 'triangle' })
         noise(c, { dur: 0.24, gain: 0.12, from: 700, to: 220 })

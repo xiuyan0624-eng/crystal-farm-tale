@@ -1729,11 +1729,11 @@ export default function PixelWorld({ game }: { game: GameApi }) {
               <span className="flex-none whitespace-nowrap text-micro text-sage-deep">点泥土块播种</span>
             )}
             <span className="mx-0.5 h-5 w-px flex-none bg-line" />
-            <button onClick={() => { setPopup(null); if (waterNeed > 0) sfx('water'); game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs flex-none whitespace-nowrap">
+            <button onClick={() => { setPopup(null); if (waterNeed > 0) sfx('waterAll'); game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs flex-none whitespace-nowrap">
               <Icon name="drop" size={13} />
               一键浇水{waterNeed > 0 ? ` ${waterNeed}` : ''}
             </button>
-            <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvest'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs flex-none whitespace-nowrap">
+            <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvestAll'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs flex-none whitespace-nowrap">
               <Icon name="basket" size={13} />
               一键收获{readyCount > 0 ? ` ${readyCount}` : ''}
             </button>
