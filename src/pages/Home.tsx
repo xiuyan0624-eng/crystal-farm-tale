@@ -7,6 +7,7 @@ import BattlePanel, { type BattleStatus } from '../components/BattlePanel'
 import DexPanel from '../components/DexPanel'
 import OwnerPanel from '../components/OwnerPanel'
 import FarmSidebar from '../components/FarmSidebar'
+import MmoPanel from '../components/MmoPanel'
 import PixelWorld from '../components/PixelWorld'
 import DevPanel from '../components/DevPanel'
 import HatchReveal from '../components/HatchReveal'
@@ -169,7 +170,11 @@ export default function Home() {
             <BattlePanel game={game} active={tab === 'battle'} onStatus={setBattleStatus} />
           </div>
         </div>
-        <aside className="hidden lg:block"><FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} /></aside>
+        <aside className="hidden lg:block">
+          {tab === 'battle'
+            ? <MmoPanel game={game} />
+            : <FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} />}
+        </aside>
       </main>
 
       <div className="mx-auto max-w-7xl px-2 pb-2 sm:px-5 lg:hidden">
@@ -178,7 +183,11 @@ export default function Home() {
             <Icon name="leaf" size={15} />
             农事待办 / 水晶 / 小队
           </summary>
-          <div className="mt-3"><FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} /></div>
+          <div className="mt-3">
+            {tab === 'battle'
+              ? <MmoPanel game={game} />
+              : <FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} />}
+          </div>
         </details>
       </div>
 
