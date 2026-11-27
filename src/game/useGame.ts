@@ -1243,7 +1243,7 @@ export function useGame() {
   }, [notify])
 
   // -------------------- 战斗结算 --------------------
-  const battleWin = useCallback((spriteIds: string[], expGain: number, coins: number, crystals: Element[], boss = false, loot: { id: string; qty: number }[] = [], exclusive?: string, eliteId?: string) => {
+  const battleWin = useCallback((spriteIds: string[], expGain: number, coins: number, crystals: Element[], boss = false, loot: { id: string; qty: number }[] = [], exclusive?: string, eliteId?: string, expMap?: Record<string, number>) => {
     setState(s => {
       const inv = { ...s.inventory }
       crystals.forEach(el => addItem(inv, `crystal_${el}`, 1))
@@ -1253,7 +1253,7 @@ export function useGame() {
       const sprites = s.sprites.map(x => {
         if (!spriteIds.includes(x.id)) return x
         let { level, exp } = x
-        exp += expGain
+        exp += expMap?.[x.id] ?? expGain
         while (exp >= expForLevel(level)) { exp -= expForLevel(level); level += 1 }
         const { sp, evolvedTo } = levelUpSprite({ ...x, level, exp })
         if (evolvedTo) {

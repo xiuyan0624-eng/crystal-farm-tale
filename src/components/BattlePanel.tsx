@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ELEMENTS, ENEMIES, EQUIP_MAP, SPECIES_MAP, counterMul, itemName, type Element, type EnemyDef, type Sprite } from '../game/data'
+import { ELEMENTS, ENEMIES, EQUIP_MAP, SPECIES_MAP, counterMul, itemName, movesForSpecies, type Element, type EnemyDef, type SkillDef, type Sprite } from '../game/data'
 import { spriteImage } from '../game/spriteImages'
 import { ENEMY_IMAGES, BOSS_IMAGE } from '../game/enemyImages'
 import treeUrl from '../assets/sticker/tree.png'
@@ -52,6 +52,8 @@ interface BattleState {
   defending: boolean
   over: boolean
   bossTotalDmg: number
+  /** 真正上过场的精灵（吃满经验），其余队友按 30% 学习装置结算 */
+  participants: string[]
 }
 
 export interface BattleStatus {
@@ -141,7 +143,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       enemyMax: isBoss ? state.worldBossMax : (enemy as EnemyDef).hp,
       team, hpMap, activeIdx: 0, energy: 1,
       log: [`${team.length}只精灵小队遭遇了 ${enemyName}！`],
-      defending: false, over: false, bossTotalDmg: 0,
+      defending: false, over: false, bossTotalDmg: 0, participants: [team[0]],
     })
     setSelectedEnemy(null)
   }
@@ -167,7 +169,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     return items
   }
 
-  const playerAction = (kind: 'attack' | 'skill' | 'defend') => {
+  const playerAction = (kind: 'attack' | 'skill' | 'defend', picked?: SkillDef) => {
     if (!battle || !activeSprite || battle.over) return
     let b: BattleState = { ...battle, hpMap: { ...battle.hpMap } }
     let sp = activeSprite
@@ -177,7 +179,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
 
     const actWith = (cur: Sprite): 'fainted' | 'ok' => {
       const species = SPECIES_MAP[cur.speciesId]
-      const skill = species.skills[0]
+      const skill = picked ?? species.skills[0]
       const isAttackLine = species.line === 'attack' || species.line === 'limited'
       const myHp = b.hpMap[cur.id]
 
@@ -195,8 +197,9 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       } else if (kind === 'skill') {
         fxAlly('lunge')
         if (!skill) { notify('这只精灵没有技能！'); return 'ok' }
-        if (b.energy < 3) { notify('能量不足！大招需要 3 点能量'); return 'ok' }
-        b.energy -= 3
+        const cost = skill.cost ?? 3
+        if (b.energy < cost) { notify(`能量不足！${skill.name} 需要 ${cost} 点能量`); return 'ok' }
+        b.energy -= cost
         if (skill.kind === 'heal') {
           const healAmt = Math.round(cur.maxHp * skill.mul)
           b.hpMap[cur.id] = Math.min(cur.maxHp, b.hpMap[cur.id] + healAmt)
@@ -272,7 +275,14 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       b = pushLog(b, `🎉 胜利！全队获得 ${ed.expReward} 经验、💰${ed.coinReward} 金币、💎结晶×${ed.crystalReward.length}`)
       sfx('win')
       const gotExclusive = !!ed.exclusive && !state.ownedEquips.includes(ed.exclusive)
-      battleWin(b.team, ed.expReward, ed.coinReward, ed.crystalReward, false, items, ed.exclusive, ed.id)
+      const expMap: Record<string, number> = {}
+      b.team.forEach(id => { expMap[id] = b.participants.includes(id) ? ed.expReward : Math.round(ed.expReward * 0.3) })
+      const shareTxt = b.team.map(id => {
+        const sp2 = state.sprites.find(x => x.id === id)
+        return `${sp2?.name ?? id} ${expMap[id]}`
+      }).join(' · ')
+      b = pushLog(b, `经验分配：${shareTxt}（未上场按 30% 学习装置结算）`)
+      battleWin(b.team, ed.expReward, ed.coinReward, ed.crystalReward, false, items, ed.exclusive, ed.id, expMap)
       setLoot({ title: ed.name, exp: ed.expReward, coins: ed.coinReward, crystals: ed.crystalReward, items, equip: gotExclusive ? ed.exclusive : undefined })
       setBattle(b)
       setTimeout(() => endBattle(b), 1200)
@@ -312,6 +322,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     const incoming = state.sprites.find(x => x.id === id)
     if (!incoming) return
     let b: BattleState = { ...battle, hpMap: { ...battle.hpMap }, activeIdx: idx }
+    if (!b.participants.includes(id)) b.participants = [...b.participants, id]
     b = pushLog(b, `换人：「${incoming.name}」上场（消耗一回合）`)
     // 敌方行动一次
     const enemyDef = b.enemy === 'boss' ? null : (b.enemy as EnemyDef)
@@ -390,9 +401,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     const bg = BATTLE_BG[enemyEl]
     // 战斗框很扁（约 3.8:1），16:9 背景要按元素微调取景位置，地平线才落在合适高度
     const bgPos: Record<Element, string> = { wood: '50% 62%', fire: '50% 56%', water: '50% 66%', earth: '50% 60%', light: '50% 62%' }
-    const species = SPECIES_MAP[activeSprite.speciesId]
-    const skillName = species.skills[0]?.name
-    const canSkill = hasSkill(activeSprite) && battle.energy >= 3
+    const moves = movesForSpecies(activeSprite.speciesId)
 
     return (
       <section className="card overflow-hidden p-0">
@@ -560,20 +569,43 @@ export default function BattlePanel({ game, active = true, onStatus }: {
               </span>
             </button>
 
-            <button
-              onClick={() => { sfx('skill'); playerAction('skill') }}
-              disabled={!canSkill || battle.over}
-              title={!hasSkill(activeSprite) ? '幼体还不会技能，用普通攻击吧' : canSkill ? undefined : '能量不足：大招要 3 点能量'}
-              className="flex w-full items-center gap-2.5 rounded-control border-hair border-line bg-paper px-3 py-2.5 text-left transition-colors hover:bg-paper2 disabled:opacity-45">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-control bg-butter/15 text-butter-deep">
-                <Icon name={hasSkill(activeSprite) ? 'sparkle' : 'lock'} size={17} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-caption font-bold text-ink">{hasSkill(activeSprite) ? (skillName ?? '元素技能') : '技能（未学会）'}</span>
-                <span className="block text-micro text-inksoft">{hasSkill(activeSprite) ? '消耗 3 点能量，按五行克制结算' : '幼体还不会技能，进化后解锁'}</span>
-              </span>
-              <span className="micro num text-inkfaint">{hasSkill(activeSprite) ? `${battle.energy}/3` : '—'}</span>
-            </button>
+            {/* 招式：按阶段解锁，各自消耗能量（宝可梦式选招） */}
+            <div className="space-y-1.5">
+              {moves.length === 0 && (
+                <div className="flex items-center gap-2.5 rounded-control border-hair border-line bg-paper px-3 py-2.5 opacity-60">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-control bg-line/40 text-inkfaint"><Icon name="lock" size={17} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-caption font-bold text-ink">技能（未学会）</span>
+                    <span className="block text-micro text-inksoft">幼体只有普通攻击，进化到 Lv.10 解锁招式</span>
+                  </span>
+                </div>
+              )}
+              {moves.map(mv => {
+                const cost = mv.cost ?? 3
+                const enough = battle.energy >= cost
+                return (
+                  <button
+                    key={mv.name}
+                    onClick={() => { sfx('skill'); playerAction('skill', mv) }}
+                    disabled={!enough || battle.over}
+                    title={enough ? mv.desc : `能量不足：需要 ${cost} 点（当前 ${battle.energy}）`}
+                    className="flex w-full items-center gap-2.5 rounded-control border-hair border-line bg-paper px-3 py-2 text-left transition-colors hover:bg-paper2 disabled:opacity-45">
+                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-control ${mv.kind === 'heal' ? 'bg-sage/15 text-sage-deep' : 'bg-butter/15 text-butter-deep'}`}>
+                      <Icon name={mv.kind === 'heal' ? 'drop' : 'sparkle'} size={17} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-caption font-bold text-ink">{mv.name}</span>
+                        <span className="pill-soft num">{cost} 能量</span>
+                        <span className="micro num text-inkfaint">{mv.kind === 'heal' ? '回复' : `威力 ×${mv.mul.toFixed(1)}`}</span>
+                      </span>
+                      <span className="block truncate text-micro text-inksoft">{mv.desc}</span>
+                    </span>
+                    <span className="micro num text-inkfaint">{battle.energy}/3</span>
+                  </button>
+                )
+              })}
+            </div>
 
             <button
               onClick={() => { sfx('job'); playerAction('defend') }}
