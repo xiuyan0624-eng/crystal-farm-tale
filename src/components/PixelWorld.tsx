@@ -182,25 +182,6 @@ const PASTURE = LAYOUT.pasture
 const COMPANION_BAND = LAYOUT.companionBand ?? { x1: 380, x2: 690, y1: 240, y2: 405 }
 
 /** 地块分区：左上 2×2 温室、右下 2×2 池塘，其余是普通田 */
-const GRID_COLS = LAYOUT.grid.cols ?? PLOT_COLS
-const GRID_ROWS = LAYOUT.grid.rows ?? PLOT_ROWS
-function plotZone(idx: number): 'greenhouse' | 'pond' | null {
-  const r = Math.floor(idx / GRID_COLS)
-  const c = idx % GRID_COLS
-  if (r <= 1 && c <= 1) return 'greenhouse'
-  if (r >= GRID_ROWS - 2 && c >= GRID_COLS - 2) return 'pond'
-  return null
-}
-function zoneCells(zone: 'greenhouse' | 'pond'): number[] {
-  const out: number[] = []
-  for (let r = 0; r < GRID_ROWS; r += 1) {
-    for (let c = 0; c < GRID_COLS; c += 1) {
-      const idx = r * GRID_COLS + c
-      if (plotZone(idx) === zone) out.push(idx)
-    }
-  }
-  return out
-}
 const PLOT_POS: [number, number][] = []
 for (let r = 0; r < (LAYOUT.grid.rows ?? PLOT_ROWS); r++) {
   for (let c = 0; c < (LAYOUT.grid.cols ?? PLOT_COLS); c++) {
@@ -493,9 +474,6 @@ function PlotUpgrade({ game, plot, plotIdx }: { game: GameApi; plot: Plot; plotI
   const kind = plot.kind ?? 'soil'
   const kindDef = PLOT_KINDS[kind]
   const unlocked = state.plots.length >= MAX_PLOTS
-  // 分区固定：左上 2×2 是温室区、右下 2×2 是池塘区，其他位置只能种普通作物
-  const zone = plotZone(plotIdx)
-  const zoneHint = zone === 'greenhouse' ? '这里是温室区' : zone === 'pond' ? '这里是池塘区' : null
   const kindSection = unlocked ? (
     <div className="mt-2 border-t border-line/60 pt-2">
       <p className="micro mb-1.5">
@@ -503,25 +481,19 @@ function PlotUpgrade({ game, plot, plotIdx }: { game: GameApi; plot: Plot; plotI
       </p>
       {!plot.cropId && (
         <div className="grid grid-cols-1 gap-1">
-          {zoneHint && (
-            <button onClick={() => {
-              const target = zone === 'greenhouse' ? 'greenhouse' : 'pond'
-              const def = PLOT_KIND_LIST.find(d => d.id === target)!
-              game.convertPlot(plotIdx, def.id)
-              sfx('job')
-            }}
-              disabled={kind === (zone === 'greenhouse' ? 'greenhouse' : 'pond') || state.coins < (PLOT_KIND_LIST.find(d => d.id === (zone === 'greenhouse' ? 'greenhouse' : 'pond'))?.price ?? 0)}
+          {PLOT_KIND_LIST.filter(d => d.id !== 'soil').map(def => (
+            <button key={def.id} onClick={() => { game.convertPlot(plotIdx, def.id); sfx('job') }}
+              disabled={kind === def.id || state.coins < def.price}
               className="btn-soft btn-xs w-full">
-              {kind === (zone === 'greenhouse' ? 'greenhouse' : 'pond')
-                ? `当前：${PLOT_KINDS[zone === 'greenhouse' ? 'greenhouse' : 'pond'].name}`
-                : `${zone === 'greenhouse' ? '🌿' : '💧'} {zoneHint}：改成${PLOT_KINDS[zone === 'greenhouse' ? 'greenhouse' : 'pond'].name}（${PLOT_KIND_LIST.find(d => d.id === (zone === 'greenhouse' ? 'greenhouse' : 'pond'))?.price} 金币）`}
+              {kind === def.id ? `当前：${def.name}` : `${def.icon} 改成${def.name}（${def.price} 金币）`}
             </button>
-          )}
-          {!zoneHint && <p className="micro text-inkfaint">普通农田（温室在左上角、池塘在右下角）</p>}
+          ))}
         </div>
       )}
     </div>
-  ) : null
+  ) : (
+    <p className="mt-2 text-micro text-inkfaint">先把 {MAX_PLOTS} 块地全部开垦完，才能改造成温室或池塘</p>
+  )
 
   if (plot.level >= 3) return <><p className="mt-2 text-micro text-inkfaint">已是最高级「仙土」</p>{kindSection}</>
   const next = PLOT_LEVELS[plot.level + 1]
@@ -1249,92 +1221,100 @@ export default function PixelWorld({ game }: { game: GameApi }) {
         })
       })
 
-      // 温室 / 池塘：两个固定分区各加一个"地标"，让它们像农场里的两个角落
-      {
-        const gh = zoneCells('greenhouse').filter(i => g.plots[i]?.kind === 'greenhouse')
-        if (gh.length) {
-          const xs = gh.map(i => PLOT_POS[i][0])
-          const ys = gh.map(i => PLOT_POS[i][1])
-          const gx = Math.min(...xs) - 10
-          const gy = Math.min(...ys) - 16
-          const gw = Math.max(...xs) + PLOT_SIZE - gx + 10
-          const gh2 = Math.max(...ys) + PLOT_SIZE - gy + 12
-          deco.push({
-            y: gy + gh2,
-            draw: () => {
+      // 温室 / 池塘：任意地块改造后就地长出水面或玻璃棚（不再按分区画）
+      g.plots.forEach((pl, i) => {
+        const kd = pl.kind ?? 'soil'
+        if (kd !== 'greenhouse' && kd !== 'pond') return
+        const pos = PLOT_POS[i]
+        if (!pos) return
+        const [px, py] = pos
+        const S = PLOT_SIZE
+        deco.push({
+          y: py + S + 6,
+          draw: () => {
+            ctx.save()
+            if (kd === 'greenhouse') {
+              // 玻璃棚：该格上方一层半透明白 + 细白框 + 人字屋脊 + 四角绿柱
+              const gx = px - 2, gy = py - 12, gw = S + 4, gh = S + 12
+              // 玻璃反光：一道斜向淡蓝
               ctx.save()
-              // 玻璃棚：半透明白 + 细白框 + 屋脊
-              ctx.fillStyle = 'rgba(255,255,255,0.16)'
-              ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh2, 14); ctx.fill()
-              ctx.strokeStyle = 'rgba(255,255,255,0.75)'
-              ctx.lineWidth = 2
-              ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh2, 14); ctx.stroke()
-              ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-              ctx.lineWidth = 1.2
-              ctx.beginPath(); ctx.moveTo(gx + 8, gy + 10); ctx.lineTo(gx + gw - 8, gy + 10); ctx.stroke()
-              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy + 4); ctx.lineTo(gx + gw / 2, gy + gh2 - 8); ctx.stroke()
-              // 屋脊高光 + 人字形棚顶
-              ctx.strokeStyle = 'rgba(255,255,255,0.85)'
-              ctx.lineWidth = 3
-              ctx.beginPath(); ctx.moveTo(gx + 12, gy + 6); ctx.lineTo(gx + gw - 12, gy + 6); ctx.stroke()
-              ctx.strokeStyle = 'rgba(255,255,255,0.6)'
-              ctx.lineWidth = 1.6
-              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy - 10); ctx.lineTo(gx + 10, gy + 6); ctx.stroke()
-              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy - 10); ctx.lineTo(gx + gw - 10, gy + 6); ctx.stroke()
-              // 四个角柱
-              ctx.fillStyle = 'rgba(124,155,100,0.8)'
-              for (const [cx2, cy2] of [[gx + 3, gy + 4], [gx + gw - 7, gy + 4], [gx + 3, gy + gh2 - 12], [gx + gw - 7, gy + gh2 - 12]]) {
-                ctx.beginPath(); ctx.roundRect(cx2, cy2, 4, 10, 2); ctx.fill()
-              }
+              ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh, 10); ctx.clip()
+              const sh = ctx.createLinearGradient(gx, gy + gh, gx + gw, gy)
+              sh.addColorStop(0, 'rgba(174,208,224,0.10)')
+              sh.addColorStop(0.45, 'rgba(226,242,248,0.34)')
+              sh.addColorStop(1, 'rgba(174,208,224,0.10)')
+              ctx.fillStyle = sh
+              ctx.fillRect(gx, gy, gw, gh)
               ctx.restore()
-            },
-          })
-        }
-        const pd = zoneCells('pond').filter(i => g.plots[i]?.kind === 'pond')
-        if (pd.length) {
-          const xs = pd.map(i => PLOT_POS[i][0])
-          const ys = pd.map(i => PLOT_POS[i][1])
-          const px0 = Math.min(...xs) - 8
-          const py0 = Math.min(...ys) - 8
-          const pw = Math.max(...xs) + PLOT_SIZE - px0 + 8
-          const ph = Math.max(...ys) + PLOT_SIZE - py0 + 10
-          deco.push({
-            y: py0 + ph + 8,
-            draw: () => {
-              ctx.save()
-              // 池塘边的木栈道：沿下沿铺一条，带立柱和横纹
-              const deckH = 14
-              const dy = py0 + ph + 2
+              ctx.fillStyle = 'rgba(255,255,255,0.18)'
+              ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh, 10); ctx.fill()
+              ctx.strokeStyle = 'rgba(255,255,255,0.92)'
+              ctx.lineWidth = 2.2
+              ctx.beginPath(); ctx.roundRect(gx, gy, gw, gh, 10); ctx.stroke()
+              ctx.strokeStyle = 'rgba(124,155,100,0.55)'
+              ctx.lineWidth = 1
+              ctx.beginPath(); ctx.roundRect(gx - 1.5, gy - 1.5, gw + 3, gh + 3, 11); ctx.stroke()
+              ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+              ctx.lineWidth = 1.2
+              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy + 2); ctx.lineTo(gx + gw / 2, gy + gh - 2); ctx.stroke()
+              ctx.beginPath(); ctx.moveTo(gx + 4, gy + gh * 0.45); ctx.lineTo(gx + gw - 4, gy + gh * 0.45); ctx.stroke()
+              ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+              ctx.lineWidth = 2.6
+              ctx.beginPath(); ctx.moveTo(gx + 6, gy + 4); ctx.lineTo(gx + gw - 6, gy + 4); ctx.stroke()
+              ctx.strokeStyle = 'rgba(255,255,255,0.62)'
+              ctx.lineWidth = 1.6
+              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy - 8); ctx.lineTo(gx + 5, gy + 4); ctx.stroke()
+              ctx.beginPath(); ctx.moveTo(gx + gw / 2, gy - 8); ctx.lineTo(gx + gw - 5, gy + 4); ctx.stroke()
+              ctx.fillStyle = 'rgba(124,155,100,0.85)'
+              for (const [cx2, cy2] of [[gx + 2, gy + 3], [gx + gw - 6, gy + 3], [gx + 2, gy + gh - 11], [gx + gw - 6, gy + gh - 11]]) {
+                ctx.beginPath(); ctx.roundRect(cx2, cy2, 4, 9, 2); ctx.fill()
+              }
+            } else {
+              // 池塘：土塘边 + 水面 + 水纹 + 荷叶 + 下沿木栈道
+              const px0 = px + 2, py0 = py + 4, pw = S - 4, ph = S - 8
+              ctx.fillStyle = '#7A5A3E'
+              ctx.beginPath(); ctx.roundRect(px0 - 2, py0 - 2, pw + 4, ph + 4, 11); ctx.fill()
+              const pg = ctx.createLinearGradient(0, py0, 0, py0 + ph)
+              pg.addColorStop(0, '#BFDCE7')
+              pg.addColorStop(1, '#7FA9C4')
+              ctx.fillStyle = pg
+              ctx.beginPath(); ctx.roundRect(px0, py0, pw, ph, 9); ctx.fill()
+              ctx.strokeStyle = 'rgba(255,255,255,0.65)'
+              ctx.lineWidth = 1.6
+              ctx.beginPath(); ctx.roundRect(px0, py0, pw, ph, 9); ctx.stroke()
+              ctx.strokeStyle = 'rgba(255,255,255,0.5)'
+              ctx.lineWidth = 1.3
+              for (const ry of [py0 + ph * 0.36, py0 + ph * 0.62]) {
+                ctx.beginPath()
+                ctx.moveTo(px0 + 10, ry)
+                ctx.bezierCurveTo(px0 + pw * 0.36, ry - 4, px0 + pw * 0.62, ry + 4, px0 + pw - 10, ry)
+                ctx.stroke()
+              }
+              // 荷叶：三片小圆叶
+              for (const [lx, ly, r] of [[px0 + pw * 0.32, py0 + ph * 0.42, 5.5], [px0 + pw * 0.55, py0 + ph * 0.3, 4], [px0 + pw * 0.62, py0 + ph * 0.55, 5]] as [number, number, number][]) {
+                ctx.fillStyle = 'rgba(124,155,100,0.9)'
+                ctx.beginPath(); ctx.ellipse(lx, ly, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill()
+                ctx.strokeStyle = 'rgba(90,67,53,0.35)'
+                ctx.lineWidth = 0.8
+                ctx.beginPath(); ctx.moveTo(lx - r * 0.8, ly); ctx.lineTo(lx + r * 0.8, ly); ctx.stroke()
+              }
+              // 木栈道：压在水的下沿内侧
+              const dy = py0 + ph - 11, dh = 10
               ctx.fillStyle = '#C79A5E'
               ctx.strokeStyle = '#8A5B3A'
-              ctx.lineWidth = 2
-              ctx.beginPath(); ctx.roundRect(px0 + 2, dy, pw - 4, deckH, 5); ctx.fill(); ctx.stroke()
-              ctx.strokeStyle = 'rgba(120,84,52,0.45)'
-              ctx.lineWidth = 1.2
-              for (let bx = px0 + 16; bx < px0 + pw - 8; bx += 18) {
-                ctx.beginPath(); ctx.moveTo(bx, dy + 2); ctx.lineTo(bx, dy + deckH - 2); ctx.stroke()
+              ctx.lineWidth = 1.5
+              ctx.beginPath(); ctx.roundRect(px0 + 5, dy, pw - 10, dh, 3); ctx.fill(); ctx.stroke()
+              ctx.strokeStyle = 'rgba(120,84,52,0.4)'
+              ctx.lineWidth = 1
+              for (let bx = px0 + 14; bx < px0 + pw - 10; bx += 12) {
+                ctx.beginPath(); ctx.moveTo(bx, dy + 2); ctx.lineTo(bx, dy + dh - 2); ctx.stroke()
               }
-              ctx.fillStyle = '#B98A50'
-              ctx.strokeStyle = '#8A5B3A'
-              for (const bx of [px0 + 14, px0 + pw / 2, px0 + pw - 20]) {
-                ctx.beginPath(); ctx.roundRect(bx, dy + deckH - 4, 6, 10, 2); ctx.fill(); ctx.stroke()
-              }
-              // 水草：三片叶子 + 穗
-              for (const [rx, ry, s2] of [[px0 + 4, dy + deckH + 6, 1], [px0 + 12, dy + deckH + 8, 0.8], [px0 + pw - 16, dy + deckH + 7, 0.9]] as [number, number, number][]) {
-                ctx.strokeStyle = '#7C9B64'
-                ctx.lineWidth = 2.4
-                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.quadraticCurveTo(rx + 3 * s2, ry - 12 * s2, rx + 1 * s2, ry - 22 * s2); ctx.stroke()
-                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.quadraticCurveTo(rx - 5 * s2, ry - 10 * s2, rx - 3 * s2, ry - 18 * s2); ctx.stroke()
-                ctx.fillStyle = '#8A5B3A'
-                ctx.beginPath(); ctx.ellipse(rx + 1 * s2, ry - 23 * s2, 2, 4.5, 0, 0, Math.PI * 2); ctx.fill()
-              }
-              ctx.restore()
-            },
-          })
-        }
-      }
+            }
+            ctx.restore()
+          },
+        })
+      })
 
-      // 角色也进同一套 y 排序：走到谷仓/树/栅栏后面时会被正确遮挡
       const cast: Walker[] = [...Array.from(st.animalWalkers.values()), ...Array.from(st.blobWalkers.values()), st.farmer]
       cast.sort((a, b) => a.y - b.y)
       cast.forEach(w => {
@@ -1554,7 +1534,16 @@ export default function PixelWorld({ game }: { game: GameApi }) {
   }
 
   const wb = workBonuses(state)
-  const seeds = Object.entries(state.inventory).filter(([id]) => id.startsWith('seed_'))
+  const seedsAll = Object.entries(state.inventory).filter(([id]) => id.startsWith('seed_'))
+  const plotKindOf = (idx: number | undefined) => (idx == null ? 'soil' : state.plots[idx]?.kind ?? 'soil')
+  const seedsForPlot = (idx: number | undefined) => {
+    const kd = plotKindOf(idx)
+    return Object.entries(state.inventory).filter(([id]) => {
+      if (!id.startsWith('seed_')) return false
+      const c = CROPS.find(x => `seed_${x.id}` === id)
+      return !!c && (!c.onlyKind || c.onlyKind === kd)
+    })
+  }
 
   const sellables = Object.entries(state.inventory).filter(([id]) => !id.startsWith('seed_'))
   const backpackGroups = useMemo(() => {
@@ -1671,8 +1660,8 @@ export default function PixelWorld({ game }: { game: GameApi }) {
               <div className="mt-2">
                 <p className="micro mb-1">选一种种子，马上播种：</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {seeds.length === 0 && <p className="micro">没有种子，先去下方种子商店买。</p>}
-                  {seeds.map(([id, n]) => (
+                  {seedsForPlot(popup.plotIdx).length === 0 && <p className="micro">这块地没有能种的种子，先去下方种子商店买。</p>}
+                  {seedsForPlot(popup.plotIdx).map(([id, n]) => (
                     <button key={id} onClick={() => { setSelectedSeed(id); actNow('plant', popup.plotIdx!, id) }} className="chip hover:bg-paper2">
                       {itemSticker(id) ? <img src={itemSticker(id)} className="h-4 w-4 object-contain" alt="" /> : <span className="text-base leading-none">{itemIcon(id)}</span>}
                       {itemName(id)}
@@ -1716,8 +1705,8 @@ export default function PixelWorld({ game }: { game: GameApi }) {
               <Icon name="leaf" size={13} />
               选种子
             </span>
-            {seeds.length === 0 && <span className="micro whitespace-nowrap">先去下方商店买</span>}
-            {seeds.map(([id, n]) => (
+            {seedsAll.length === 0 && <span className="micro whitespace-nowrap">先去下方商店买</span>}
+            {seedsAll.map(([id, n]) => (
               <button key={id} onClick={() => setSelectedSeed(selectedSeed === id ? null : id)}
                 className={`chip flex-none ${selectedSeed === id ? 'border-sage-deep bg-sage/15 text-sage-deep' : 'hover:bg-paper2'}`}>
                 {itemSticker(id) ? <img src={itemSticker(id)} className="h-4 w-4 object-contain" alt="" /> : <span className="text-base leading-none">{itemIcon(id)}</span>}
