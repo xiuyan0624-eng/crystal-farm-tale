@@ -54,6 +54,8 @@ interface BattleState {
   bossTotalDmg: number
   /** 真正上过场的精灵（吃满经验），其余队友按 30% 学习装置结算 */
   participants: string[]
+  /** 每个上场精灵的招式剩余次数，按 movesForSpecies 下标对应 */
+  ppMap: Record<string, number[]>
 }
 
 export interface BattleStatus {
@@ -71,7 +73,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
 }) {
   const { state, battleWin, updateSpriteHp, damageWorldBoss, notify } = game
   const [battle, setBattle] = useState<BattleState | null>(null)
-  const [teamPick, setTeamPick] = useState<string[]>([])
+  const [teamPick, setTeamPick] = useState<string[]>(() => (state.team ?? []).filter(id => state.sprites.some(s => s.id === id)).slice(0, 6))
   const [selectedEnemy, setSelectedEnemy] = useState<string | null>(null)
   const [auto, setAuto] = useState(false)
   const [loot, setLoot] = useState<{ title: string; exp: number; coins: number; crystals: Element[]; items: { id: string; qty: number }[]; equip?: string } | null>(null)
@@ -108,6 +110,12 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     })
   }, [battle, auto, onStatus])
 
+  // 固定队伍：编队变化即写回存档，下次进战斗页自动恢复
+  useEffect(() => {
+    game.setTeam(teamPick.filter(id => state.sprites.some(s => s.id === id)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamPick.map(x => x).join(','), state.sprites.length])
+
   const togglePick = (id: string) => {
     setTeamPick(p => p.includes(id) ? p.filter(x => x !== id) : p.length >= 3 ? p : [...p, id])
   }
@@ -136,6 +144,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       const sp = state.sprites.find(s => s.id === id)!
       hpMap[id] = sp.hp
     })
+    const ppMap: Record<string, number[]> = {}
+    team.forEach(id => { ppMap[id] = movesForSpecies(state.sprites.find(s => s.id === id)!.speciesId).map(m => m.pp ?? 5) })
     const enemyName = isBoss ? '世界BOSS·苍穹古龙王（全服共斗）' : (enemy as EnemyDef).name
     setBattle({
       enemy,
@@ -143,7 +153,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
       enemyMax: isBoss ? state.worldBossMax : (enemy as EnemyDef).hp,
       team, hpMap, activeIdx: 0, energy: 1,
       log: [`${team.length}只精灵小队遭遇了 ${enemyName}！`],
-      defending: false, over: false, bossTotalDmg: 0, participants: [team[0]],
+      defending: false, over: false, bossTotalDmg: 0, participants: [team[0]], ppMap,
     })
     setSelectedEnemy(null)
   }
@@ -169,7 +179,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     return items
   }
 
-  const playerAction = (kind: 'attack' | 'skill' | 'defend', picked?: SkillDef) => {
+  const playerAction = (kind: 'attack' | 'skill' | 'defend', picked?: SkillDef, moveIdx?: number) => {
     if (!battle || !activeSprite || battle.over) return
     let b: BattleState = { ...battle, hpMap: { ...battle.hpMap } }
     let sp = activeSprite
@@ -199,8 +209,17 @@ export default function BattlePanel({ game, active = true, onStatus }: {
         if (!skill) { notify('这只精灵没有技能！'); return 'ok' }
         const cost = skill.cost ?? 3
         if (b.energy < cost) { notify(`能量不足！${skill.name} 需要 ${cost} 点能量`); return 'ok' }
+        const idx = moveIdx ?? 0
+        const ppLeft = b.ppMap[cur.id]?.[idx] ?? 0
+        if (ppLeft <= 0) { notify(`${skill.name} 的次数用完了，换一招吧`); return 'ok' }
+        b.ppMap = { ...b.ppMap, [cur.id]: (b.ppMap[cur.id] ?? []).map((v, i) => (i === idx ? v - 1 : v)) }
         b.energy -= cost
-        if (skill.kind === 'heal') {
+        // 命中判定：Miss 时只记日志、不结算伤害，但仍会给敌人一次反击机会
+        const acc = skill.acc ?? 0.95
+        if (Math.random() > acc) {
+          b = pushLog(b, `${skill.name} 没有命中…（命中率 ${Math.round(acc * 100)}%）`)
+          popFloater('MISS', 'right', 'hurt')
+        } else if (skill.kind === 'heal') {
           const healAmt = Math.round(cur.maxHp * skill.mul)
           b.hpMap[cur.id] = Math.min(cur.maxHp, b.hpMap[cur.id] + healAmt)
           b = pushLog(b, `${skill.name}：回复 ${healAmt} 点生命（${skill.desc}）`)
@@ -580,15 +599,17 @@ export default function BattlePanel({ game, active = true, onStatus }: {
                   </span>
                 </div>
               )}
-              {moves.map(mv => {
+              {moves.map((mv, mi) => {
                 const cost = mv.cost ?? 3
-                const enough = battle.energy >= cost
+                const total = mv.pp ?? 5
+                const left = battle.ppMap?.[activeSprite.id]?.[mi] ?? total
+                const enough = battle.energy >= cost && left > 0
                 return (
                   <button
                     key={mv.name}
-                    onClick={() => { sfx('skill'); playerAction('skill', mv) }}
+                    onClick={() => { sfx('skill'); playerAction('skill', mv, mi) }}
                     disabled={!enough || battle.over}
-                    title={enough ? mv.desc : `能量不足：需要 ${cost} 点（当前 ${battle.energy}）`}
+                    title={left <= 0 ? `${mv.name} 的次数用完了` : battle.energy < cost ? `能量不足：需要 ${cost} 点（当前 ${battle.energy}）` : `命中率 ${Math.round((mv.acc ?? 0.95) * 100)}% · ${mv.desc}`}
                     className="flex w-full items-center gap-2.5 rounded-control border-hair border-line bg-paper px-3 py-2 text-left transition-colors hover:bg-paper2 disabled:opacity-45">
                     <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-control ${mv.kind === 'heal' ? 'bg-sage/15 text-sage-deep' : 'bg-butter/15 text-butter-deep'}`}>
                       <Icon name={mv.kind === 'heal' ? 'drop' : 'sparkle'} size={17} />
@@ -598,6 +619,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
                         <span className="text-caption font-bold text-ink">{mv.name}</span>
                         <span className="pill-soft num">{cost} 能量</span>
                         <span className="micro num text-inkfaint">{mv.kind === 'heal' ? '回复' : `威力 ×${mv.mul.toFixed(1)}`}</span>
+                        <span className={`micro num ${left > 0 ? 'text-inkfaint' : 'text-berry-deep'}`}>PP {left}/{total}</span>
+                        <span className="micro num text-inkfaint">{Math.round((mv.acc ?? 0.95) * 100)}%</span>
                       </span>
                       <span className="block truncate text-micro text-inksoft">{mv.desc}</span>
                     </span>
@@ -778,8 +801,11 @@ export default function BattlePanel({ game, active = true, onStatus }: {
         )}
       </section>
 
-      {/* 世界 BOSS */}
-      <section className="card p-4">
+      {/* 世界 BOSS（整块可双击开战） */}
+      <section
+        className="card p-4"
+        onDoubleClick={() => { if (fighters.length > 0) { sfx('hit'); startBattle('boss') } }}
+        title={fighters.length > 0 ? '双击直接讨伐' : undefined}>
         <div className="flex flex-wrap items-center gap-3">
           <span className="sticker-tile-lg p-0">
             <img src={BOSS_IMAGE} alt="" className="h-11 w-11 object-contain" />
@@ -788,6 +814,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="section-title text-ink">世界 BOSS · 苍穹古龙王</h2>
               <span className="pill-soft">全服共斗</span>
+              <span className="text-micro text-inkfaint">双击整块卡片直接讨伐</span>
             </div>
             <p className="caption mt-1">全服玩家共同讨伐，按贡献伤害结算金币，击杀额外得光结晶 ×2。</p>
             <div className="mt-2 h-2 max-w-xs overflow-hidden rounded-full bg-line/60">

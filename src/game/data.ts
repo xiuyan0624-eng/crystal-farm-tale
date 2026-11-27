@@ -161,7 +161,7 @@ export const STAGES: Record<Stage, { name: string; minLv: number }> = {
 
 export const EVOLVE_LEVEL = { adult: 10, complete: 30, ultimate: 50 }
 
-export interface SkillDef { name: string; desc: string; mul: number; kind: 'dmg' | 'heal'; cost?: number }
+export interface SkillDef { name: string; desc: string; mul: number; kind: 'dmg' | 'heal'; cost?: number; acc?: number; pp?: number }
 
 export interface SpriteSpecies {
   id: string
@@ -182,16 +182,16 @@ export interface SpriteSpecies {
   evolvesTo?: string  // 成体/完全体：下一阶段
 }
 
-const dmg = (name: string, desc: string, mul: number, cost = 3): SkillDef => ({ name, desc, mul, kind: 'dmg', cost })
-const heal = (name: string, desc: string, mul: number, cost = 3): SkillDef => ({ name, desc, mul, kind: 'heal', cost })
+const dmg = (name: string, desc: string, mul: number, cost = 3, acc = 0.95, pp = 5): SkillDef => ({ name, desc, mul, kind: 'dmg', cost, acc, pp })
+const heal = (name: string, desc: string, mul: number, cost = 3, acc = 1, pp = 5): SkillDef => ({ name, desc, mul, kind: 'heal', cost, acc, pp })
 
 /** 通用招式：成体解锁「冲击」(1 能量)，完全体起解锁「爆发」(2 能量)，专属技固定 3 能量 */
 export const ELEMENT_MOVES: Record<Element, { light: SkillDef; heavy: SkillDef }> = {
-  wood: { light: dmg('枝击', '本系轻击，消耗 1 能量', 1.0, 1), heavy: dmg('藤爆', '缠绕爆发，消耗 2 能量', 1.8, 2) },
-  fire: { light: dmg('焰息', '本系轻击，消耗 1 能量', 1.0, 1), heavy: dmg('烈焰冲', '熔岩爆发，消耗 2 能量', 1.8, 2) },
-  water: { light: dmg('水弹', '本系轻击，消耗 1 能量', 1.0, 1), heavy: dmg('涌潮', '潮汐爆发，消耗 2 能量', 1.8, 2) },
-  earth: { light: dmg('落石', '本系轻击，消耗 1 能量', 1.0, 1), heavy: dmg('地裂', '岩层爆发，消耗 2 能量', 1.8, 2) },
-  light: { light: dmg('光弹', '本系轻击，消耗 1 能量', 1.0, 1), heavy: dmg('圣辉', '圣光爆发，消耗 2 能量', 1.8, 2) },
+  wood: { light: dmg('枝击', '本系轻击，消耗 1 能量', 1.0, 1, 1, 20), heavy: dmg('藤爆', '缠绕爆发，消耗 2 能量', 1.8, 2, 0.9, 10) },
+  fire: { light: dmg('焰息', '本系轻击，消耗 1 能量', 1.0, 1, 1, 20), heavy: dmg('烈焰冲', '熔岩爆发，消耗 2 能量', 1.8, 2, 0.9, 10) },
+  water: { light: dmg('水弹', '本系轻击，消耗 1 能量', 1.0, 1, 1, 20), heavy: dmg('涌潮', '潮汐爆发，消耗 2 能量', 1.8, 2, 0.9, 10) },
+  earth: { light: dmg('落石', '本系轻击，消耗 1 能量', 1.0, 1, 1, 20), heavy: dmg('地裂', '岩层爆发，消耗 2 能量', 1.8, 2, 0.9, 10) },
+  light: { light: dmg('光弹', '本系轻击，消耗 1 能量', 1.0, 1, 1, 20), heavy: dmg('圣辉', '圣光爆发，消耗 2 能量', 1.8, 2, 0.9, 10) },
 }
 
 /** 某只精灵当前可用的招式（按阶段解锁，最多 3 个） */

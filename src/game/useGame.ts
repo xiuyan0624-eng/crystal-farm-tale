@@ -67,6 +67,8 @@ export interface GameState {
   hatchPity: { sinceEpic: number; sinceLegend: number }
   /** 已领取的里程碑 id */
   goalsClaimed: string[]
+  /** 固定队伍（宝可梦式，BattlePanel 读写；只存 id） */
+  team: string[]
   /** 刚刚发生的一次进化（不落盘，只驱动演出） */
   lastEvolve?: { fromSpecies: string; toSpecies: string; element: Element; n: number } | null
   /** 刚召唤出的限定传说：有值时弹「传说降临」演出（一次性，不落盘） */
@@ -309,6 +311,7 @@ function initialState(): GameState {
   sellLog: [],
   ownerEquip: {},
     goalsClaimed: [],
+    team: [],
     daily: { date: '', water: 0, harvest: 0, elite: 0, claimed: [] },
     firstEarthCrystalGranted: false,
   }
@@ -349,6 +352,7 @@ function loadState(): GameState {
           lastHatch: null, // 破壳画面是一次性事件，重载后不再弹
           lastHatchRarity: null,
         goalsClaimed: (parsed as Partial<GameState>).goalsClaimed ?? [],
+        team: Array.isArray((parsed as Partial<GameState>).team) ? (parsed as Partial<GameState>).team! : [],
         daily: (parsed as Partial<GameState>).daily ?? { date: '', water: 0, harvest: 0, elite: 0, claimed: [] },
       ownedEquips: (parsed as Partial<GameState>).ownedEquips ?? [],
       equipLevels: (parsed as Partial<GameState>).equipLevels ?? {},
@@ -1451,6 +1455,10 @@ export function useGame() {
   const dismissEvolve = useCallback(() => setState(s => ({ ...s, lastEvolve: null })), [])
   const dismissSummon = useCallback(() => setState(s => ({ ...s, lastSummon: null })), [])
 
+  const setTeam = useCallback((ids: string[]) => {
+    setState(s => ({ ...s, team: ids.slice(0, 6) }))
+  }, [])
+
   const claimDaily = useCallback((taskId: 'water' | 'harvest' | 'elite') => {
     setState(s => {
       const task = DAILY_TASKS.find(t => t.id === taskId)
@@ -1512,7 +1520,7 @@ export function useGame() {
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,
     battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, removePlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
-    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, dismissSummon, demoEvolve, demoSummon,
+    setTeam, claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, dismissSummon, demoEvolve, demoSummon,
     setGender,
   }
 }
