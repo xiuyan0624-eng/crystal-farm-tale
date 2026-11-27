@@ -1698,42 +1698,42 @@ export default function PixelWorld({ game }: { game: GameApi }) {
           <span>点地块播种 / 管理 / 收获 · 点动物喂食 / 收产出 · 点空地让农夫走过去</span>
         </div>
 
-        {/* 浮条：选种子 + 批量操作（固定在农场画面里，不用来回滚动） */}
-        <div className="absolute bottom-[40px] left-1/2 z-10 w-[calc(100%-12px)] max-w-[760px] -translate-x-1/2">
-          <div className="card-float flex flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:justify-center sm:overflow-visible">
-            <span className="flex flex-none items-center gap-1 whitespace-nowrap text-micro font-semibold text-inksoft">
-              <Icon name="leaf" size={13} />
-              选种子
-            </span>
-            {seedsAll.length === 0 && <span className="micro whitespace-nowrap">先去下方商店买</span>}
-            {seedsAll.map(([id, n]) => (
-              <button key={id} onClick={() => setSelectedSeed(selectedSeed === id ? null : id)}
-                className={`chip flex-none ${selectedSeed === id ? 'border-sage-deep bg-sage/15 text-sage-deep' : 'hover:bg-paper2'}`}>
-                {itemSticker(id) ? <img src={itemSticker(id)} className="h-4 w-4 object-contain" alt="" /> : <span className="text-base leading-none">{itemIcon(id)}</span>}
-                {itemName(id)}
-                <span className="num text-inkfaint">×{n}</span>
-              </button>
-            ))}
-            {selectedSeed && (
-              <span className="flex-none whitespace-nowrap text-micro text-sage-deep">点泥土块播种</span>
-            )}
-            <span className="mx-0.5 h-5 w-px flex-none bg-line" />
-            <button onClick={() => { setPopup(null); if (waterNeed > 0) sfx('waterAll'); game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs flex-none whitespace-nowrap">
-              <Icon name="drop" size={13} />
-              一键浇水{waterNeed > 0 ? ` ${waterNeed}` : ''}
-            </button>
-            <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvestAll'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs flex-none whitespace-nowrap">
-              <Icon name="basket" size={13} />
-              一键收获{readyCount > 0 ? ` ${readyCount}` : ''}
-            </button>
-            <button onClick={() => { setPopup(null); sfx('plant'); game.replantAll() }} disabled={emptyCount === 0 || seedKinds === 0}
-              className="btn-soft btn-xs flex-none whitespace-nowrap" title="用背包里最多的种子，把空地一次性补上">
-              <Icon name="leaf" size={13} />
-              一键补种{emptyCount > 0 ? ` ${emptyCount}` : ''}
-            </button>
-          </div>
-        </div>
       </div>
+
+      {/* 操作条：种子 + 批量操作（放在画面外，不挡视线） */}
+      <section className="card flex items-center gap-2 px-3 py-2">
+        <span className="flex flex-none items-center gap-1 whitespace-nowrap text-micro font-semibold text-inksoft">
+          <Icon name="leaf" size={13} />
+          种子
+        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5">
+          {seedsAll.length === 0 && <span className="micro whitespace-nowrap text-inkfaint">先去下方商店买种子</span>}
+          {seedsAll.map(([id, n]) => (
+            <button key={id} onClick={() => setSelectedSeed(selectedSeed === id ? null : id)}
+              className={`chip flex-none whitespace-nowrap ${selectedSeed === id ? 'border-sage-deep bg-sage/15 text-sage-deep' : 'hover:bg-paper2'}`}>
+              {itemSticker(id) ? <img src={itemSticker(id)} className="h-4 w-4 object-contain" alt="" /> : <span className="text-base leading-none">{itemIcon(id)}</span>}
+              {itemName(id)}
+              <span className="num text-inkfaint">×{n}</span>
+            </button>
+          ))}
+          {selectedSeed && <span className="flex-none whitespace-nowrap text-micro text-sage-deep">点地块播种</span>}
+        </div>
+        <div className="flex flex-none items-center gap-1.5">
+          <button onClick={() => { setPopup(null); if (waterNeed > 0) sfx('waterAll'); game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs whitespace-nowrap">
+            <Icon name="drop" size={13} />
+            浇水{waterNeed > 0 ? ` ${waterNeed}` : ''}
+          </button>
+          <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvestAll'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs whitespace-nowrap">
+            <Icon name="basket" size={13} />
+            收获{readyCount > 0 ? ` ${readyCount}` : ''}
+          </button>
+          <button onClick={() => { setPopup(null); sfx('plant'); game.replantAll() }} disabled={emptyCount === 0 || seedKinds === 0}
+            className="btn-soft btn-xs whitespace-nowrap" title="用背包里最多的种子把空地一次补上">
+            <Icon name="leaf" size={13} />
+            补种{emptyCount > 0 ? ` ${emptyCount}` : ''}
+          </button>
+        </div>
+      </section>
 
       {/* 农场信息 + 扩建 */}
       <section className="card flex flex-wrap items-center gap-4 p-4">
