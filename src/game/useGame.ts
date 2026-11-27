@@ -69,6 +69,8 @@ export interface GameState {
   goalsClaimed: string[]
   /** 刚刚发生的一次进化（不落盘，只驱动演出） */
   lastEvolve?: { fromSpecies: string; toSpecies: string; element: Element; n: number } | null
+  /** 刚召唤出的限定传说：有值时弹「传说降临」演出（一次性，不落盘） */
+  lastSummon?: { speciesId: string; element: Element; n: number } | null
   /** 每日委托：按日期重置的三个计数 + 已领取的委托 */
   daily: { date: string; water: number; harvest: number; elite: number; claimed: string[] }
   /** 已获得的农场主装备（按 id 记录，不占背包格） */
@@ -1173,7 +1175,13 @@ export function useGame() {
       const species = LIMITED_SPECIES[Math.floor(Math.random() * LIMITED_SPECIES.length)]
       const sprite = makeSprite(species)
       notify(`传说降临！「${species.name}」回应了你的召唤！`)
-      return { ...s, inventory: inv, sprites: [...s.sprites, sprite], dex: Array.from(new Set([...s.dex, species.id])) }
+      return {
+        ...s,
+        inventory: inv,
+        sprites: [...s.sprites, sprite],
+        dex: Array.from(new Set([...s.dex, species.id])),
+        lastSummon: { speciesId: species.id, element: species.element, n: Date.now() },
+      }
     })
   }, [notify, addItem])
 
@@ -1433,7 +1441,15 @@ export function useGame() {
   }, [])
 
   /** 关闭进化演出 */
+  const demoSummon = useCallback(() => {
+    setState(s => {
+      const sp = LIMITED_SPECIES[Math.floor(Math.random() * LIMITED_SPECIES.length)]
+      return { ...s, lastSummon: { speciesId: sp.id, element: sp.element, n: Date.now() } }
+    })
+  }, [])
+
   const dismissEvolve = useCallback(() => setState(s => ({ ...s, lastEvolve: null })), [])
+  const dismissSummon = useCallback(() => setState(s => ({ ...s, lastSummon: null })), [])
 
   const claimDaily = useCallback((taskId: 'water' | 'harvest' | 'elite') => {
     setState(s => {
@@ -1496,7 +1512,7 @@ export function useGame() {
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,
     battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, removePlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
-    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, demoEvolve,
+    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, dismissSummon, demoEvolve, demoSummon,
     setGender,
   }
 }

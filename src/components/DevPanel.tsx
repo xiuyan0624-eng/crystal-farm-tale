@@ -58,6 +58,7 @@ export default function DevPanel({ api, open, onClose }: Props) {
     { name: '补满肥料', fn: () => devSet(s => ({ ...s, inventory: { ...s.inventory, fert: 99, fert_rare: 20 } })) },
     { name: '满图鉴（全物种）', fn: () => devSet(fullDex) },
     { name: '看一次进化演出', fn: () => { api.demoEvolve(); onClose() } },
+    { name: '看一次召唤演出', fn: () => { api.demoSummon(); onClose() } },
   ]
 
   return (

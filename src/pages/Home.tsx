@@ -12,6 +12,7 @@ import PixelWorld from '../components/PixelWorld'
 import DevPanel from '../components/DevPanel'
 import HatchReveal from '../components/HatchReveal'
 import EvolveReveal from '../components/EvolveReveal'
+import SummonReveal from '../components/SummonReveal'
 import { ELEMENT_LIST, ELEMENTS } from '../game/data'
 import Icon, { type IconName } from '../ui/Icon'
 import { getBgmStyle, initAudio, isMuted, setBgmStyle, sfx, startBgm, toggleMuted } from '../game/audio'
@@ -222,6 +223,13 @@ export default function Home() {
         const hatched = state.lastHatch ? state.sprites.find(sp => sp.id === state.lastHatch) : undefined
         return hatched ? <HatchReveal sprite={hatched} tier={state.lastHatchRarity} onClose={game.dismissHatch} /> : null
       })()}
+      {state.lastSummon && (
+        <SummonReveal
+          speciesId={state.lastSummon.speciesId}
+          element={state.lastSummon.element}
+          onClose={game.dismissSummon}
+        />
+      )}
       {state.lastEvolve && (
         <EvolveReveal
           fromSpecies={state.lastEvolve.fromSpecies}

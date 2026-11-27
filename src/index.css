@@ -341,3 +341,52 @@
   100% { opacity: 0; transform: translateY(-26px) scale(1); }
 }
 .evolve-spark { animation: evolve-spark 1.6s ease-in-out infinite; }
+
+/* ---------- 传说降临演出 ---------- */
+@keyframes summon-rays-spin {
+  from { transform: rotate(0deg) scale(0.9); opacity: 0; }
+  15% { opacity: 0.7; }
+  to { transform: rotate(360deg) scale(1.06); opacity: 0.75; }
+}
+.summon-rays { animation: summon-rays-spin 9s linear infinite; border-radius: 9999px; filter: blur(2px); }
+
+@keyframes summon-ring-pulse {
+  0% { transform: scale(0.6); opacity: 0; }
+  30% { opacity: 0.9; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+.summon-ring { animation: summon-ring-pulse 2.6s ease-out infinite; }
+.summon-ring-rev { animation: summon-rays-spin 14s linear infinite reverse; }
+
+@keyframes summon-spark-rise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(-520px) scale(1.1); opacity: 0; }
+}
+.summon-spark { animation-name: summon-spark-rise; animation-timing-function: ease-out; animation-iteration-count: infinite; }
+
+@keyframes summon-sprite-pop {
+  0% { transform: scale(0.4); opacity: 0; filter: brightness(2.2); }
+  55% { transform: scale(1.08); opacity: 1; filter: brightness(1.25); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+}
+.summon-sprite { animation: summon-sprite-pop 0.9s cubic-bezier(.2,.8,.3,1) both; }
+
+@keyframes summon-title-in {
+  0% { transform: translateY(10px); opacity: 0; letter-spacing: 0.6em; }
+  100% { transform: translateY(0); opacity: 1; letter-spacing: 0.02em; }
+}
+.summon-title { animation: summon-title-in 0.8s ease-out 0.35s both; }
+
+@keyframes summon-flash-out {
+  0% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+.summon-flash { animation: summon-flash-out 0.75s ease-out both; }
+
+@keyframes summon-halo-pulse {
+  0%, 100% { transform: scale(0.96); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+.summon-halo { animation: summon-halo-pulse 3.2s ease-in-out infinite; }
