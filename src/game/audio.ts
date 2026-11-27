@@ -12,6 +12,14 @@ let bgmWanted = false
 let muted = false
 
 const MUTE_KEY = 'crystal-farm-audio-muted'
+const BGM_KEY = 'crystal-farm-bgm'
+export type BgmStyle = 'box' | '8bit'
+let bgmStyle: BgmStyle = 'box'
+let chipTimer: number | null = null
+try {
+  const saved = localStorage.getItem(BGM_KEY)
+  if (saved === '8bit' || saved === 'box') bgmStyle = saved
+} catch { /* 内存回退 */ }
 
 try {
   muted = localStorage.getItem(MUTE_KEY) === '1'
@@ -161,6 +169,7 @@ function ensureBgm(): HTMLAudioElement {
 }
 
 function playBgm(): void {
+  if (bgmStyle === '8bit') { startChiptune(); return }
   const el = ensureBgm()
   bgmWanted = true
   if (muted) return
@@ -182,6 +191,68 @@ export function startBgm(): void {
   if (ensure()) playBgm()
 }
 
+/** 8bit 芯片版 BGM：方波主旋律 + 三角波低音 + 噪声 hi-hat，16 步循环 */
+const CHIP_LEAD = [0, 4, 7, 12, 7, 4, 0, 7, 2, 5, 9, 14, 9, 5, 2, 7]
+const CHIP_BASS = [-12, -12, -5, -5, -8, -8, -5, -5]
+const midiToHz = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
+
+function startChiptune(): void {
+  const c = ensure()
+  if (!c || !master) return
+  if (chipTimer !== null) return
+  const stepMs = 132
+  let step = 0
+  const oneNote = (freq: number, dur: number, type: OscillatorType, gain: number) => {
+    const o = c.createOscillator()
+    const g = c.createGain()
+    o.type = type
+    o.frequency.value = freq
+    g.gain.setValueAtTime(0.0001, c.currentTime)
+    g.gain.exponentialRampToValueAtTime(gain, c.currentTime + 0.012)
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur)
+    o.connect(g)
+    g.connect(master!)
+    o.start()
+    o.stop(c.currentTime + dur + 0.02)
+  }
+  const tick = () => {
+    if (muted) return
+    const bar = Math.floor(step / CHIP_LEAD.length)
+    const lead = midiToHz(72 + CHIP_LEAD[step % CHIP_LEAD.length])
+    const bass = midiToHz(48 + CHIP_BASS[step % CHIP_BASS.length])
+    oneNote(lead, 0.11, 'square', 0.028)
+    oneNote(bass, 0.2, 'triangle', 0.038)
+    if (bar % 2 === 1 && step % 4 === 2) oneNote(3200, 0.03, 'square', 0.012)
+    step = (step + 1) % (CHIP_LEAD.length * 4)
+  }
+  tick()
+  chipTimer = window.setInterval(tick, stepMs)
+}
+
+function stopChiptune(): void {
+  if (chipTimer !== null) {
+    window.clearInterval(chipTimer)
+    chipTimer = null
+  }
+}
+
+export function getBgmStyle(): BgmStyle {
+  return bgmStyle
+}
+
+/** 切换 BGM 风格：音乐盒（mp3） / 8bit（现场合成） */
+export function setBgmStyle(style: BgmStyle): BgmStyle {
+  bgmStyle = style
+  try { localStorage.setItem(BGM_KEY, style) } catch { /* 内存回退 */ }
+  if (bgmEl) { bgmEl.pause(); bgmEl.currentTime = 0 }
+  stopChiptune()
+  if (bgmWanted && !muted) {
+    if (style === '8bit') startChiptune()
+    else playBgm()
+  }
+  return bgmStyle
+}
+
 export function isMuted(): boolean {
   return muted
 }
@@ -196,5 +267,7 @@ export function toggleMuted(): boolean {
     if (muted) bgmEl.pause()
     else if (bgmWanted) void bgmEl.play().catch(() => undefined)
   }
+  if (muted) stopChiptune()
+  else if (bgmWanted && bgmStyle === '8bit') startChiptune()
   return muted
 }

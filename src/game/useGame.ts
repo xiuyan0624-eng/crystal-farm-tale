@@ -67,6 +67,8 @@ export interface GameState {
   hatchPity: { sinceEpic: number; sinceLegend: number }
   /** 已领取的里程碑 id */
   goalsClaimed: string[]
+  /** 每日委托：按日期重置的三个计数 + 已领取的委托 */
+  daily: { date: string; water: number; harvest: number; elite: number; claimed: string[] }
   /** 已获得的农场主装备（按 id 记录，不占背包格） */
   ownedEquips: string[]
   equipLevels: Record<string, number>
@@ -303,6 +305,7 @@ function initialState(): GameState {
   sellLog: [],
   ownerEquip: {},
     goalsClaimed: [],
+    daily: { date: '', water: 0, harvest: 0, elite: 0, claimed: [] },
     firstEarthCrystalGranted: false,
   }
 }
@@ -342,6 +345,7 @@ function loadState(): GameState {
           lastHatch: null, // 破壳画面是一次性事件，重载后不再弹
           lastHatchRarity: null,
         goalsClaimed: (parsed as Partial<GameState>).goalsClaimed ?? [],
+        daily: (parsed as Partial<GameState>).daily ?? { date: '', water: 0, harvest: 0, elite: 0, claimed: [] },
       ownedEquips: (parsed as Partial<GameState>).ownedEquips ?? [],
       equipLevels: (parsed as Partial<GameState>).equipLevels ?? {},
       eliteDaily: (parsed as Partial<GameState>).eliteDaily ?? { date: '', ids: [] },
@@ -881,6 +885,19 @@ export function useGame() {
   }, [notify])
 
   // 一键浇水：所有需要浇水的作物立即 +1 次，不用等小农夫逐块走
+  /** 每日委托定义（日期变了自动清零） */
+  const DAILY_TASKS: { id: 'water' | 'harvest' | 'elite'; name: string; target: number; reward: { coins: number; crystals: number } }[] = [
+    { id: 'water', name: '浇 20 次水', target: 20, reward: { coins: 300, crystals: 2 as const } },
+    { id: 'harvest', name: '收获 30 份作物', target: 30, reward: { coins: 400, crystals: 2 as const } },
+    { id: 'elite', name: '击败 1 只精英', target: 1, reward: { coins: 600, crystals: 3 as const } },
+  ]
+  const todayStr = () => new Date().toISOString().slice(0, 10)
+  const freshDaily = (d: GameState['daily'] | undefined) => {
+    const day = todayStr()
+    if (!d || d.date !== day) return { date: day, water: 0, harvest: 0, elite: 0, claimed: [] as string[] }
+    return d
+  }
+
   const waterAll = useCallback(() => {
     setState(s => {
       let count = 0
@@ -893,7 +910,8 @@ export function useGame() {
       })
       if (count === 0) { notify('没有需要浇水的作物（没种地或都已浇透）'); return s }
       notify(`💧 一键浇水：${count} 块地各 +1 次，作物都加快了`)
-      return { ...s, plots }
+      const daily = freshDaily(s.daily)
+      return { ...s, plots, daily: { ...daily, water: daily.water + count } }
     })
   }, [notify])
 
@@ -917,6 +935,8 @@ export function useGame() {
         levelUps += r.levelUps
       }
       if (count === 0) { notify('没有成熟的作物，先浇水等它们长大吧 🌱'); return s }
+      const daily = freshDaily(next.daily)
+      next = { ...next, daily: { ...daily, harvest: daily.harvest + items } }
       notify(`🧺 一键收获 ${count} 块地：作物×${items}${crystals > 0 ? `、结晶×${crystals}` : ''}${firstEarth ? '、土结晶×2（够 5 颗，去孵化池！）' : ''}${levelUps > 0 ? ` 🎉 农场升到 Lv.${next.farmLevel}` : ''}`)
       return next
     })
@@ -1239,12 +1259,14 @@ export function useGame() {
         }
         eliteDaily = { date: today, ids }
       }
+      const dailyState = freshDaily(s.daily)
+      const dailyNext = eliteId ? { ...dailyState, elite: dailyState.elite + 1 } : dailyState
       const shards = boss ? 1 : Math.random() < 0.15 ? 1 : 0
       if (shards) {
         addItem(inv, 'star_shard', shards)
         setTimeout(() => notify(`✨ 战斗结束捡到星尘碎片 ×${shards}`), 60)
       }
-      return { ...s, sprites, coins: s.coins + coins + dailyBonus, inventory: inv, dex, ownedEquips, eliteDaily }
+      return { ...s, sprites, coins: s.coins + coins + dailyBonus, inventory: inv, dex, ownedEquips, eliteDaily, daily: dailyNext }
     })
   }, [addItem, notify])
 
@@ -1361,6 +1383,26 @@ export function useGame() {
   }, [])
 
   // 里程碑领奖：条件达成且没领过才发奖励
+  /** 领取每日委托奖励（完成后一次性） */
+  const claimDaily = useCallback((taskId: 'water' | 'harvest' | 'elite') => {
+    setState(s => {
+      const task = DAILY_TASKS.find(t => t.id === taskId)
+      if (!task) return s
+      const d = freshDaily(s.daily)
+      const done = d[taskId]
+      if (done < task.target || d.claimed.includes(taskId)) return s
+      const inv = { ...s.inventory }
+      // 奖励：金币 + 随机属性结晶若干
+      const els: Element[] = ['wood', 'fire', 'water', 'earth', 'light']
+      for (let i = 0; i < task.reward.crystals; i++) {
+        const el = els[Math.floor(Math.random() * els.length)]
+        addItem(inv, `crystal_${el}`, 1)
+      }
+      setTimeout(() => notify(`✅ 委托完成：${task.name}，+${task.reward.coins} 金币、结晶×${task.reward.crystals}`), 30)
+      return { ...s, coins: s.coins + task.reward.coins, inventory: inv, daily: { ...d, claimed: [...d.claimed, taskId] } }
+    })
+  }, [addItem, notify])
+
   const claimGoal = useCallback((goalId: string) => {
     const goal = GOALS.find(g => g.id === goalId)
     if (!goal) return
@@ -1403,6 +1445,7 @@ export function useGame() {
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,
     battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
+    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily),
     setGender,
   }
 }

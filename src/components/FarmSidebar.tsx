@@ -168,6 +168,39 @@ export default function FarmSidebar({ game, onNavigate }: { game: GameApi; onNav
         </button>
       </section>
 
+      {/* 每日委托 */}
+      <section className="card p-3">
+        <h4 className="section-title mb-2 text-caption">
+          <Icon name="clock" size={15} className="text-butter-deep" />
+          每日委托
+          <span className="ml-auto text-[10px] text-inkfaint">每天 0 点重置</span>
+        </h4>
+        <ul className="space-y-1.5">
+          {game.DAILY_TASKS.map(t => {
+            const done = Math.min(game.dailyState[t.id], t.target)
+            const ready = done >= t.target && !game.dailyState.claimed.includes(t.id)
+            return (
+              <li key={t.id}>
+                <div className="flex items-baseline gap-1">
+                  <span className="truncate text-caption text-ink">{t.name}</span>
+                  <span className="num ml-auto text-[10px] text-inkfaint">{done}/{t.target}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="h-1 flex-1 overflow-hidden rounded-full bg-line/70">
+                    <span className="block h-full rounded-full bg-sage" style={{ width: `${(done / t.target) * 100}%` }} />
+                  </span>
+                  {game.dailyState.claimed.includes(t.id)
+                    ? <span className="w-10 text-[10px] text-inkfaint">已领</span>
+                    : ready
+                      ? <button onClick={() => game.claimDaily(t.id)} className="btn-primary btn-xs">领取</button>
+                      : <span className="w-10 text-[10px] text-inkfaint">+{t.reward.coins}</span>}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
       {/* 里程碑 */}
       <section className="card p-3">
         <h4 className="section-title mb-2 text-caption">

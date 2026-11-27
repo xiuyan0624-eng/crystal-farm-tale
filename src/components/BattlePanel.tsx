@@ -73,6 +73,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
   const [loot, setLoot] = useState<{ title: string; exp: number; coins: number; crystals: Element[]; items: { id: string; qty: number }[]; equip?: string } | null>(null)
   const [allyFx, setAllyFx] = useState<{ k: 'lunge' | 'hurt'; n: number } | null>(null)
   const [enemyFx, setEnemyFx] = useState<{ k: 'hurt'; n: number } | null>(null)
+  /** 技能爆发 / 暴击特写：贴在敌人身上的一层光效 */
+  const [burst, setBurst] = useState<{ kind: 'skill' | 'crit' | 'finish'; element: Element; n: number } | null>(null)
   const [floaters, setFloaters] = useState<{ id: number; text: string; side: 'left' | 'right'; kind: 'hit' | 'crit' | 'hurt' | 'heal' }[]>([])
   const floaterId = useRef(0)
   const enteredRef = useRef(false)
@@ -189,7 +191,9 @@ export default function BattlePanel({ game, active = true, onStatus }: {
           b.bossTotalDmg += dmg
           b = pushLog(b, `${skill.name}${mul > 1 ? '（克制！）' : mul < 1 ? '（属性不利…）' : ''}：对 ${enemyName} 造成 ${dmg} 点伤害`)
           popFloater(`-${dmg}`, 'right', 'crit')
+          setBurst({ kind: 'skill', element: cur.element, n: Date.now() })
           fxEnemy()
+          if (b.enemyHp <= 0) setBurst({ kind: 'finish', element: cur.element, n: Date.now() + 1 })
           if (b.enemy === 'boss') damageWorldBoss(dmg)
         }
       } else {
@@ -205,6 +209,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
         b.bossTotalDmg += dmg
         b = pushLog(b, `${tag}：「${cur.name}」对 ${enemyName} 造成 ${dmg} 点伤害`)
         popFloater(`-${dmg}`, 'right', critFlag ? 'crit' : 'hit')
+        if (critFlag) setBurst({ kind: 'crit', element: cur.element, n: Date.now() })
+        if (b.enemyHp <= 0) setBurst({ kind: 'finish', element: cur.element, n: Date.now() + 1 })
         fxEnemy()
         if (b.enemy === 'boss') damageWorldBoss(dmg)
       }
@@ -372,6 +378,16 @@ export default function BattlePanel({ game, active = true, onStatus }: {
           {/* 敌人（右） */}
           <div className="absolute bottom-[24px] right-[12%] flex flex-col items-center">
             <span className="pointer-events-none absolute -bottom-1 h-3 w-20 rounded-[50%] bg-ink/[0.10]" />
+            {burst && (
+              <span key={`b-${burst.n}`} className={`pointer-events-none absolute inset-0 z-10 grid place-items-center ${burst.kind === 'finish' ? 'fx-finish' : burst.kind === 'crit' ? 'fx-crit' : 'fx-burst'}`}>
+                <span className="block rounded-full"
+                  style={{
+                    width: burst.kind === 'crit' ? 132 : 150,
+                    height: burst.kind === 'crit' ? 132 : 150,
+                    background: `radial-gradient(circle, ${ELEMENTS[burst.element].color}bb 0%, ${ELEMENTS[burst.element].color}33 45%, transparent 70%)`,
+                  }} />
+              </span>
+            )}
             <span key={enemyFx?.n ?? 0} className={enemyFx ? 'fx-hurt' : ''}>
               <img
                 src={isBoss ? BOSS_IMAGE : (ENEMY_IMAGES[ed!.id] ?? BOSS_IMAGE)}
@@ -384,9 +400,10 @@ export default function BattlePanel({ game, active = true, onStatus }: {
               <ElementDot el={enemyEl} />
               {isBoss ? '苍穹古龙王' : ed!.name}
             </div>
-            <div className="mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-line/70">
-              <div className="h-full rounded-full bg-danger transition-all duration-300" style={{ width: `${enemyPct}%` }} />
+            <div className={`mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-line/70 ${enemyPct <= 30 ? 'boss-rage' : ''}`}>
+              <div className={`h-full rounded-full transition-all duration-300 ${enemyPct <= 30 ? 'bg-berry' : 'bg-danger'}`} style={{ width: `${enemyPct}%` }} />
             </div>
+            {enemyPct <= 30 && battle.enemyHp > 0 && <span className="mt-0.5 text-[10px] font-bold text-berry-deep">残血 · 最后一击</span>}
             <div className="micro num">{Math.round(battle.enemyHp)} / {battle.enemyMax}</div>
           </div>
 

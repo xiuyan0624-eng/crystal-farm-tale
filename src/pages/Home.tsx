@@ -13,7 +13,7 @@ import DevPanel from '../components/DevPanel'
 import HatchReveal from '../components/HatchReveal'
 import { ELEMENT_LIST, ELEMENTS } from '../game/data'
 import Icon, { type IconName } from '../ui/Icon'
-import { initAudio, isMuted, sfx, startBgm, toggleMuted } from '../game/audio'
+import { getBgmStyle, initAudio, isMuted, setBgmStyle, sfx, startBgm, toggleMuted } from '../game/audio'
 import girlUrl from '../assets/sticker/girl.png'
 import boyUrl from '../assets/sticker/boy.png'
 
@@ -31,6 +31,7 @@ export default function Home() {
   const { state, toasts } = game
   const [tab, setTab] = useState<string>('world')
   const [muted, setMuted] = useState<boolean>(isMuted())
+  const [bgmStyle, setStyle] = useState(getBgmStyle())
   const [devOpen, setDevOpen] = useState(false)
   const [battleStatus, setBattleStatus] = useState<BattleStatus | null>(null)
 
@@ -133,6 +134,13 @@ export default function Home() {
               aria-label={muted ? '开启声音' : '静音'}>
               <Icon name={muted ? 'mute' : 'volume'} size={14} />
               <span className="hidden sm:inline">{muted ? '静音' : '声音'}</span>
+            </button>
+            <button
+              onClick={() => { setStyle(setBgmStyle(bgmStyle === 'box' ? '8bit' : 'box')); sfx('click') }}
+              className="btn-ghost btn-xs" title={bgmStyle === 'box' ? '背景音乐：音乐盒（点切换 8bit）' : '背景音乐：8bit 芯片（点切换音乐盒）'}
+              aria-label="切换背景音乐风格">
+              <Icon name="volume" size={14} />
+              <span className="hidden sm:inline">{bgmStyle === 'box' ? '音乐盒' : '8bit'}</span>
             </button>
             <button
               onClick={() => { setDevOpen(true); sfx('click') }}

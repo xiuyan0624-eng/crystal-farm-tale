@@ -302,3 +302,33 @@
 }
 .fx-lunge { animation: fx-lunge .3s ease-out; }
 .fx-hurt { animation: fx-hurt .34s ease-out; }
+
+/* 战斗表现二轮：技能爆发 / 暴击特写 / 击破 */
+@keyframes fx-burst {
+  0% { opacity: 0; transform: scale(.35); }
+  22% { opacity: .95; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+.fx-burst { animation: fx-burst .52s ease-out forwards; }
+
+@keyframes fx-crit {
+  0% { transform: scale(1) rotate(0deg); }
+  18% { transform: scale(1.14) rotate(-3deg); }
+  38% { transform: scale(1.06) rotate(2deg); }
+  58% { transform: scale(1.1) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.fx-crit { animation: fx-crit .42s ease-out; }
+
+@keyframes fx-finish {
+  0% { opacity: .95; transform: scale(.7); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.25); }
+}
+.fx-finish { animation: fx-finish .9s ease-out forwards; }
+
+@keyframes boss-rage {
+  0%, 100% { box-shadow: 0 0 0 rgba(211,95,123,0); }
+  50% { box-shadow: 0 0 14px rgba(211,95,123,.55); }
+}
+.boss-rage { animation: boss-rage 1.1s ease-in-out infinite; }
