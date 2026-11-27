@@ -110,6 +110,20 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     setTeamPick(p => p.includes(id) ? p.filter(x => x !== id) : p.length >= 3 ? p : [...p, id])
   }
 
+  /** 编队内调整顺序（前 3 位就是上场接力顺序） */
+  const movePick = (id: string, dir: -1 | 1) => {
+    setTeamPick(p => {
+      const i = p.indexOf(id)
+      if (i < 0) return p
+      const j = i + dir
+      if (j < 0 || j >= p.length) return p
+      const next = [...p]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      sfx('click')
+      return next
+    })
+  }
+
   const startBattle = (enemy: EnemyDef | 'boss') => {
     const autoPool = fighters.filter(f => !isSupportLine(f))
     const team = teamPick.length > 0 ? teamPick : (autoPool.length > 0 ? autoPool : fighters).slice(0, 3).map(f => f.id)
@@ -290,6 +304,46 @@ export default function BattlePanel({ game, active = true, onStatus }: {
     setBattle(b)
   }
 
+  /** 战斗中换人：消耗一回合，敌方立刻行动一次（宝可梦式） */
+  const switchTo = (id: string) => {
+    if (!battle || battle.over || id === battle.team[battle.activeIdx]) return
+    const idx = battle.team.indexOf(id)
+    if (idx < 0 || (battle.hpMap[id] ?? 0) <= 0) return
+    const incoming = state.sprites.find(x => x.id === id)
+    if (!incoming) return
+    let b: BattleState = { ...battle, hpMap: { ...battle.hpMap }, activeIdx: idx }
+    b = pushLog(b, `换人：「${incoming.name}」上场（消耗一回合）`)
+    // 敌方行动一次
+    const enemyDef = b.enemy === 'boss' ? null : (b.enemy as EnemyDef)
+    const enemyEl: Element = b.enemy === 'boss' ? 'light' : enemyDef!.element
+    const enemyName = b.enemy === 'boss' ? '苍穹古龙王' : enemyDef!.name
+    const eatk = b.enemy === 'boss' ? Math.max(58, Math.round(incoming.maxHp * 0.12)) : enemyDef!.atk
+    const emul = counterMul(enemyEl, incoming.element)
+    const edmg = Math.max(1, Math.round(eatk * emul - incoming.def * 0.5))
+    b.hpMap[id] = Math.max(0, (b.hpMap[id] ?? 0) - edmg)
+    b = pushLog(b, `${enemyName} 趁机出手${emul > 1 ? '（克制你！）' : ''}，对「${incoming.name}」造成 ${edmg} 点伤害`)
+    popFloater(`-${edmg}`, 'left', 'hurt')
+    fxAlly('hurt')
+    b.energy = Math.min(3, b.energy + 1)
+    if ((b.hpMap[id] ?? 0) <= 0) {
+      b = pushLog(b, `「${incoming.name}」倒下了…`)
+      const alive = b.team.findIndex(t => (b.hpMap[t] ?? 0) > 0)
+      if (alive < 0) {
+        b.over = true
+        b = pushLog(b, `全队倒下了…精灵们被送回农场疗伤（保留 1 点HP，不扣任何东西）`)
+        sfx('lose')
+        setBattle(b)
+        setTimeout(() => endBattle(b), 1400)
+        return
+      }
+      b.activeIdx = alive
+      const nsp = state.sprites.find(x => x.id === b.team[alive])
+      if (nsp) b = pushLog(b, `「${nsp.name}」接替上场！`)
+    }
+    sfx('click')
+    setBattle(b)
+  }
+
   // 刚进入战斗时把页面滚到顶，避免 sticky 顶栏压住状态面板
   useEffect(() => {
     if (battle && !enteredRef.current) {
@@ -465,20 +519,31 @@ export default function BattlePanel({ game, active = true, onStatus }: {
           </div>
         </div>
 
-        {/* 队友血线 */}
+        {/* 队友血线：点一下换人（宝可梦式，消耗一回合） */}
         <div className="flex flex-wrap items-center gap-1.5 border-t border-hair border-line px-4 py-2">
           {battle.team.map(id => {
             const sp2 = state.sprites.find(x => x.id === id)!
             const hp2 = battle.hpMap[id] ?? 0
             const dead = hp2 <= 0
+            const isActive = id === activeSprite.id
+            const canSwitch = !isActive && !dead && !battle.over
             return (
-              <span key={id} className={`chip ${id === activeSprite.id ? 'border-l-[3px] border-l-berry border-line-strong bg-line/40' : dead ? 'opacity-40' : ''}`}>
+              <button
+                key={id}
+                onClick={() => { if (canSwitch) switchTo(id) }}
+                disabled={!canSwitch}
+                title={isActive ? '正在场上' : dead ? '已倒下' : '换上场（消耗一回合，敌方会出手）'}
+                className={`chip ${isActive ? 'border-l-[3px] border-l-berry border-line-strong bg-line/40' : dead ? 'opacity-40' : 'hover:bg-paper2'} ${canSwitch ? 'cursor-pointer' : 'cursor-default'}`}>
                 {spriteFace(sp2, 'h-6 w-6')}
                 {sp2.name}
                 <span className="num text-inkfaint">{Math.round(hp2)}/{sp2.maxHp}</span>
-              </span>
+                {canSwitch && <Icon name="refresh" size={11} className="text-inkfaint" />}
+              </button>
             )
           })}
+          {battle.team.length > 1 && !battle.over && (
+            <span className="ml-auto text-micro text-inkfaint">点队友换人 · 消耗一回合</span>
+          )}
         </div>
 
         {/* 指令 + 战报 */}
@@ -599,7 +664,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
                 <span className="sticker-tile">{spriteFace(sp, 'h-9 w-9')}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-1.5">
-                    {pickedIdx >= 0 && <span className="pill-soft">{pickedIdx + 1} 号位</span>}
+                    {pickedIdx >= 0 && <span className="pill-soft num">{pickedIdx + 1} 号位</span>}
                     <span className="text-caption font-bold text-ink">{sp.name}</span>
                     <span className="micro num">Lv.{sp.level}</span>
                     {isSupportLine(sp) && (
@@ -617,6 +682,24 @@ export default function BattlePanel({ game, active = true, onStatus }: {
                   </span>
                   {lowHp && <span className="mt-0.5 block text-micro text-danger">重伤中，等待回血…</span>}
                 </span>
+                {pickedIdx >= 0 && (
+                  <span className="flex shrink-0 flex-col gap-1">
+                    <button
+                      onClick={e => { e.stopPropagation(); movePick(sp.id, -1) }}
+                      disabled={pickedIdx === 0}
+                      title="往前一位（更早登场）"
+                      className="grid h-5 w-5 place-items-center rounded border-hair border-line text-inkfaint hover:bg-paper2 disabled:opacity-30">
+                      <Icon name="chevronUp" size={12} />
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); movePick(sp.id, 1) }}
+                      disabled={pickedIdx === teamPick.length - 1}
+                      title="往后一位"
+                      className="grid h-5 w-5 place-items-center rounded border-hair border-line text-inkfaint hover:bg-paper2 disabled:opacity-30">
+                      <Icon name="chevronDown" size={12} />
+                    </button>
+                  </span>
+                )}
               </button>
             )
           })}
@@ -629,10 +712,14 @@ export default function BattlePanel({ game, active = true, onStatus }: {
         <h2 className="section-title">
           <Icon name="swords" size={17} className="text-inksoft" />
           野外讨伐
+          <span className="ml-2 text-micro font-normal text-inkfaint">点一下看详情 · 双击直接开战</span>
         </h2>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {ENEMIES.map(e => (
-            <button key={e.id} onClick={() => setSelectedEnemy(selectedEnemy === e.id ? null : e.id)}
+            <button key={e.id}
+              onClick={() => setSelectedEnemy(selectedEnemy === e.id ? null : e.id)}
+              onDoubleClick={() => { if (fighters.length > 0) startBattle(e) }}
+              title="单击查看，双击直接开战"
               className={`flex items-center gap-2.5 rounded-control border-hair p-2.5 text-left transition-colors ${selectedEnemy === e.id ? 'border-berry bg-berry/10' : 'border-line bg-paper hover:bg-paper2'}`}>
               <span className="sticker-tile-lg p-0">
                 <img src={ENEMY_IMAGES[e.id] ?? BOSS_IMAGE} alt="" className="h-11 w-11 object-contain" style={e.tint ? { filter: e.tint } : undefined} />
@@ -677,7 +764,7 @@ export default function BattlePanel({ game, active = true, onStatus }: {
             <div className="mt-1 text-micro text-inksoft num">全服血量 {Math.round(state.worldBossHp)} / {state.worldBossMax}</div>
           </div>
           {fighters.length > 0 && (
-            <button onClick={() => startBattle('boss')} className="btn-secondary">
+            <button onClick={() => startBattle('boss')} onDoubleClick={() => startBattle('boss')} className="btn-secondary">
               <Icon name="swords" size={15} />
               讨伐 BOSS
             </button>

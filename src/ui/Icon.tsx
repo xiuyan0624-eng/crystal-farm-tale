@@ -14,6 +14,7 @@ export type IconName =
   | 'shield' | 'paw' | 'lock' | 'volume' | 'mute'
   | 'fert' | 'bug' | 'pail' | 'feed'
   | 'fiber' | 'hide' | 'dust' | 'fang' | 'scale' | 'shirt'
+  | 'chevronUp' | 'chevronDown'
 
 type IconProps = {
   name: IconName
@@ -264,6 +265,8 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M14.2 6.4 17.6 9.8" {...stroke} />
     </>
   ),
+  chevronUp: <path d="m6.5 14.5 5.5-5.5 5.5 5.5" {...stroke} />,
+  chevronDown: <path d="m6.5 9.5 5.5 5.5 5.5-5.5" {...stroke} />,
   refresh: (
     <>
       <path d="M19.2 12a7.2 7.2 0 1 1-2.1-5.1" {...stroke} />
