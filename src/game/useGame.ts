@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ANIMALS, CROPS, CRYSTAL_Q, CROP_EXP, ELEMENTS, ELEMENT_LIST, EVOLVE_LEVEL, FERTILIZERS, JOBS,
   LIMITED_SPECIES, MAX_PLOTS, PLOT_LEVELS, QUALITIES, QUALITY_WEIGHTS, SPECIES_MAP,
-  babiesOf, calcStats, expForLevel, farmExpForLevel, itemName, jobEff, parseItem,
+  babiesOf, bestJobFor, calcStats, expForLevel, farmExpForLevel, itemName, jobEff, parseItem,
   EQUIPS, EQUIP_MAP, MATERIALS, equipLevelMul, enhanceCost, EQUIP_MAX_LEVEL, PLOT_KINDS, plotExpandCost, rollCrystalQuality, specialsOf, STAR_LEVEL, STAR_SHARD_COST, STAR_SCALE_COST, STAR_MUL, SUMMON_COST,
   type PlotKind,
   type Element, type FeedStat, type JobId, type Rarity, type Sprite, type SpriteSpecies,
@@ -248,7 +248,7 @@ export function makeSprite(species: SpriteSpecies, feedBonus = 0): Sprite {
     exp: 0,
     stats: feed,
     ...st, hp: st.maxHp,
-    job: null,
+    job: bestJobFor(species.element),
     stamina: 100,
   }
 }

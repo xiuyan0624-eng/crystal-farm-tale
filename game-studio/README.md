@@ -1226,3 +1226,13 @@ A/B/C 都还是「大贴纸摆在大空地上」。这一版把**所有单位缩
 触发点：`useGame.summonLimited()` 成功后写 `GameState.lastSummon = { speciesId, element, n }`（一次性、不落盘），`Home.tsx` 在破壳与进化演出之后渲染 `SummonReveal`；测试面板新增「看一次召唤演出」方便随时预览。
 
 ![召唤演出](farm-tale/docs/summon-reveal-2.png)
+
+---
+
+## 第三十八轮：战斗页固定 8bit + 出生即上岗
+
+**战斗页自动切 8bit**：进「战斗」页时 BGM 临时切到芯片音乐（方波主旋律 + 三角波低音），离开自动还原你在顶栏选的那一项。实现上没动用户偏好：`audio.ts` 里加了 `battleOverride`，`playBgm()`/`startBgm()` 取 `battleOverride ?? bgmStyle`，`setBattleBgm(on)` 负责起停，`Home.tsx` 用 `useEffect` 跟页签走。实测 `box → 8bit → box`。
+
+**精灵出生即上岗**：孵化和召唤出来的精灵不再是「休息」，而是按元素直接派给自己最擅长的工种（`bestJobFor(element)`：木→收获、水→浇水、火→驱虫、土→施肥/牧场照料、光→采集水晶/牧场照料）。这样新精灵一落地就开始干活，也更容易被玩家看到。
+
+![出生即上岗](farm-tale/docs/born-job.png)

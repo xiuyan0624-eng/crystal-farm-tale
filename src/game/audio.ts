@@ -169,7 +169,8 @@ function ensureBgm(): HTMLAudioElement {
 }
 
 function playBgm(): void {
-  if (bgmStyle === '8bit') { startChiptune(); return }
+  ;(window as unknown as { __audibleBgm?: string }).__audibleBgm = 'box'
+  if ((battleOverride ?? bgmStyle) === '8bit') { startChiptune(); return }
   const el = ensureBgm()
   bgmWanted = true
   if (muted) return
@@ -197,6 +198,7 @@ const CHIP_BASS = [-12, -12, -5, -5, -8, -8, -5, -5]
 const midiToHz = (m: number) => 440 * Math.pow(2, (m - 69) / 12)
 
 function startChiptune(): void {
+  ;(window as unknown as { __audibleBgm?: string }).__audibleBgm = '8bit'
   const c = ensure()
   if (!c || !master) return
   if (chipTimer !== null) return
@@ -236,6 +238,21 @@ function stopChiptune(): void {
   }
 }
 
+let battleOverride: BgmStyle | null = null
+
+/** 战斗页临时切 8bit：不动用户偏好，离开战斗页传 null 还原 */
+export function setBattleBgm(on: boolean): void {
+  battleOverride = on ? '8bit' : null
+  const style = battleOverride ?? bgmStyle
+  if (style === '8bit') {
+    if (bgmEl) { bgmEl.pause(); bgmEl.currentTime = 0 }
+    if (bgmWanted && !muted) startChiptune()
+  } else {
+    stopChiptune()
+    if (bgmWanted && !muted) playBgm()
+  }
+}
+
 export function getBgmStyle(): BgmStyle {
   return bgmStyle
 }
@@ -268,6 +285,6 @@ export function toggleMuted(): boolean {
     else if (bgmWanted) void bgmEl.play().catch(() => undefined)
   }
   if (muted) stopChiptune()
-  else if (bgmWanted && bgmStyle === '8bit') startChiptune()
+  else if (bgmWanted && (battleOverride ?? bgmStyle) === '8bit') startChiptune()
   return muted
 }

@@ -15,7 +15,7 @@ import EvolveReveal from '../components/EvolveReveal'
 import SummonReveal from '../components/SummonReveal'
 import { ELEMENT_LIST, ELEMENTS } from '../game/data'
 import Icon, { type IconName } from '../ui/Icon'
-import { getBgmStyle, initAudio, isMuted, setBgmStyle, sfx, startBgm, toggleMuted } from '../game/audio'
+import { getBgmStyle, initAudio, isMuted, setBattleBgm, setBgmStyle, sfx, startBgm, toggleMuted } from '../game/audio'
 import girlUrl from '../assets/sticker/girl.png'
 import boyUrl from '../assets/sticker/boy.png'
 
@@ -52,6 +52,11 @@ export default function Home() {
       window.removeEventListener('keydown', unlock)
     }
   }, [])
+  // 战斗页固定 8bit，离开还原用户设置的音乐盒
+  useEffect(() => {
+    setBattleBgm(tab === 'battle')
+  }, [tab])
+
   const Active = TABS.find(t => t.id === tab)!.comp
 
   const crystalTotal = Object.entries(state.inventory)

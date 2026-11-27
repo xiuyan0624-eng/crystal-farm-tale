@@ -485,6 +485,12 @@ export const JOBS: JobDef[] = [
   { id: 'mine', name: '采集水晶', icon: '💎', best: ['light'], desc: '在农场里四处捡，平均每 10 分钟带回 1 颗随机水晶' },
   { id: 'guard', name: '牧场照料', icon: '🪣', best: ['earth', 'light'], desc: '每 40 秒帮你收一次动物的蛋/奶/毛；收获时 5% 概率产量+1（土/光擅长）' },
 ]
+/** 出生即上岗：按元素挑最擅长的工种（同类多个时取 JOBS 里的先后顺序） */
+export function bestJobFor(element: Element): JobId {
+  const job = JOBS.find(j => j.best.includes(element)) ?? JOBS[0]
+  return job.id
+}
+
 export const STAGE_WORK_MUL: Record<Stage, number> = { baby: 1.0, adult: 1.5, complete: 2.5, ultimate: 4.0 }
 /** 单只精灵的工作效率：擅长1.2 / 普通1.0 / 其他0.5，等级每级+2%，阶段倍率 */
 export function jobEff(sp: Sprite): number {
