@@ -397,6 +397,8 @@ export function rarityByScore(score: number): { rarity: Rarity; time: number } {
 }
 
 export function useGame() {
+  /** 当前选中的种子（放在游戏层，右栏与农场共用） */
+  const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [state, setState] = useState<GameState>(loadState)
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
@@ -1395,7 +1397,7 @@ export function useGame() {
   }, [notify])
 
   return {
-    state, toasts, notify,
+    state, toasts, notify, selectedSeed, setSelectedSeed,
     buySeed, buyAnimal, sellItem, buyBack, replantAll,
     plant, water, fertilize, harvest, clearPest, upgradePlot, expandPlot, waterAll, harvestAll,
     feedAnimal, collectProduce,

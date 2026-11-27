@@ -517,9 +517,8 @@ function PlotUpgrade({ game, plot, plotIdx }: { game: GameApi; plot: Plot; plotI
 }
 
 export default function PixelWorld({ game }: { game: GameApi }) {
-  const { state } = game
+  const { state, selectedSeed, setSelectedSeed } = game
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [selectedSeed, setSelectedSeed] = useState<string | null>(null)
   const [popup, setPopup] = useState<Popup | null>(null)
   const seedRef = useRef<string | null>(null)
   seedRef.current = selectedSeed
@@ -1534,7 +1533,6 @@ export default function PixelWorld({ game }: { game: GameApi }) {
   }
 
   const wb = workBonuses(state)
-  const seedsAll = Object.entries(state.inventory).filter(([id]) => id.startsWith('seed_'))
   const plotKindOf = (idx: number | undefined) => (idx == null ? 'soil' : state.plots[idx]?.kind ?? 'soil')
   const seedsForPlot = (idx: number | undefined) => {
     const kd = plotKindOf(idx)
@@ -1570,10 +1568,6 @@ export default function PixelWorld({ game }: { game: GameApi }) {
   const popupPlot = popup?.kind === 'plot' && popup.plotIdx !== undefined ? state.plots[popup.plotIdx] : null
   const popupCrop = popupPlot?.cropId ? CROPS.find(c => c.id === popupPlot.cropId) : null
   // 浮条上的批量按钮计数
-  const waterNeed = state.plots.filter(p => p.cropId && p.waterCount < 3).length
-  const readyCount = state.plots.filter(p => p.cropId && plotProgress(p, wb) >= 1).length
-  const emptyCount = state.plots.filter(p => !p.cropId).length
-  const seedKinds = Object.keys(state.inventory).filter(k => k.startsWith('seed_') && (state.inventory[k] ?? 0) > 0).length
 
   // 物品贴纸图（带品质后缀的 id 也能匹配）
   const itemSticker = (id: string) => {
@@ -1699,41 +1693,6 @@ export default function PixelWorld({ game }: { game: GameApi }) {
         </div>
 
       </div>
-
-      {/* 操作条：种子 + 批量操作（放在画面外，不挡视线） */}
-      <section className="card flex items-center gap-2 px-3 py-2">
-        <span className="flex flex-none items-center gap-1 whitespace-nowrap text-micro font-semibold text-inksoft">
-          <Icon name="leaf" size={13} />
-          种子
-        </span>
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-0.5">
-          {seedsAll.length === 0 && <span className="micro whitespace-nowrap text-inkfaint">先去下方商店买种子</span>}
-          {seedsAll.map(([id, n]) => (
-            <button key={id} onClick={() => setSelectedSeed(selectedSeed === id ? null : id)}
-              className={`chip flex-none whitespace-nowrap ${selectedSeed === id ? 'border-sage-deep bg-sage/15 text-sage-deep' : 'hover:bg-paper2'}`}>
-              {itemSticker(id) ? <img src={itemSticker(id)} className="h-4 w-4 object-contain" alt="" /> : <span className="text-base leading-none">{itemIcon(id)}</span>}
-              {itemName(id)}
-              <span className="num text-inkfaint">×{n}</span>
-            </button>
-          ))}
-          {selectedSeed && <span className="flex-none whitespace-nowrap text-micro text-sage-deep">点地块播种</span>}
-        </div>
-        <div className="flex flex-none items-center gap-1.5">
-          <button onClick={() => { setPopup(null); if (waterNeed > 0) sfx('waterAll'); game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs whitespace-nowrap">
-            <Icon name="drop" size={13} />
-            浇水{waterNeed > 0 ? ` ${waterNeed}` : ''}
-          </button>
-          <button onClick={() => { setPopup(null); if (readyCount > 0) sfx('harvestAll'); game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs whitespace-nowrap">
-            <Icon name="basket" size={13} />
-            收获{readyCount > 0 ? ` ${readyCount}` : ''}
-          </button>
-          <button onClick={() => { setPopup(null); sfx('plant'); game.replantAll() }} disabled={emptyCount === 0 || seedKinds === 0}
-            className="btn-soft btn-xs whitespace-nowrap" title="用背包里最多的种子把空地一次补上">
-            <Icon name="leaf" size={13} />
-            补种{emptyCount > 0 ? ` ${emptyCount}` : ''}
-          </button>
-        </div>
-      </section>
 
       {/* 农场信息 + 扩建 */}
       <section className="card flex flex-wrap items-center gap-4 p-4">

@@ -173,7 +173,7 @@ export default function Home() {
       </main>
 
       <div className="mx-auto max-w-7xl px-2 pb-2 sm:px-5 lg:hidden">
-        <details className="card px-3 py-2">
+        <details className="card px-3 py-2" open>
           <summary className="flex cursor-pointer select-none items-center gap-1.5 text-caption font-semibold text-inksoft">
             <Icon name="leaf" size={15} />
             农事待办 / 水晶 / 小队

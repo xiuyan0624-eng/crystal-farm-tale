@@ -3,6 +3,7 @@ import { GOALS } from '../game/goals'
 import { spriteImage } from '../game/spriteImages'
 import type { GameApi } from '../game/useGame'
 import Icon from '../ui/Icon'
+import { ITEM_STICKERS } from './PixelWorld'
 
 /** 农场页右栏：把「假玩家 / 世界频道」换成玩家真正要看的东西 */
 export default function FarmSidebar({ game, onNavigate }: { game: GameApi; onNavigate: (tab: string) => void }) {
@@ -24,6 +25,22 @@ export default function FarmSidebar({ game, onNavigate }: { game: GameApi; onNav
     { icon: 'bug' as const, name: '虫害', n: plots.filter(p => (p.pest ?? 0) > 0).length },
   ].filter(t => t.n > 0)
 
+  // 种子与批量操作（原来是农场画面下方的一条，现在并进右栏）
+  const seeds = Object.entries(state.inventory)
+    .filter(([id, n]) => id.startsWith('seed_') && n > 0)
+    .sort((a, b) => b[1] - a[1])
+  const plantable = (seedId: string, kind: string) => {
+    const c = CROPS.find(x => `seed_${x.id}` === seedId)
+    return !!c && (!c.onlyKind || c.onlyKind === kind)
+  }
+  const waterNeed = plots.filter(p => p.cropId && (p.waterCount ?? 0) < 3).length
+  const readyCount = plots.filter(p => {
+    const c = p.cropId ? CROPS.find(x => x.id === p.cropId) : null
+    return !!c && (Date.now() - p.plantedAt) / 1000 >= c.growTime
+  }).length
+  const emptyCount = plots.filter(p => !p.cropId).length
+  const seedKinds = seeds.filter(([id]) => plantable(id, 'soil') || plantable(id, 'greenhouse') || plantable(id, 'pond')).length
+
   const crew = state.sprites.slice(0, 6)
   const goals = GOALS.map(g => ({ g, done: g.progress(state), canClaim: g.progress(state) >= g.target && !(state.goalsClaimed ?? []).includes(g.id) }))
     .filter(x => x.canClaim || x.done < x.g.target)
@@ -31,6 +48,43 @@ export default function FarmSidebar({ game, onNavigate }: { game: GameApi; onNav
 
   return (
     <div className="space-y-3">
+      {/* 种子 & 操作 */}
+      <section className="card p-3">
+        <h4 className="section-title mb-2 text-caption">
+          <Icon name="leaf" size={15} className="text-sage-deep" />
+          种子 &amp; 操作
+          <span className="ml-auto text-[10px] text-inkfaint">点种子→点地块播种</span>
+        </h4>
+        {seeds.length === 0 ? (
+          <p className="micro text-inkfaint">没有种子，去下方「种子商店」买。</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-1">
+            {seeds.map(([id, n]) => (
+              <button key={id} onClick={() => game.setSelectedSeed(game.selectedSeed === id ? null : id)}
+                className={`chip w-full justify-start text-[11px] ${game.selectedSeed === id ? 'border-sage-deep bg-sage/15 text-sage-deep' : 'hover:bg-paper2'}`}>
+                {ITEM_STICKERS[id.replace(/^seed_/, '')] ? <img src={ITEM_STICKERS[id.replace(/^seed_/, '')]} className="h-4 w-4 object-contain" alt="" /> : null}
+                <span className="truncate">{itemName(id).replace('种子', '')}</span>
+                <span className="num ml-auto text-inkfaint">×{n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {game.selectedSeed && (
+          <p className="mt-1 text-[10px] text-sage-deep">已选 {itemName(game.selectedSeed)} —— 去点一块空地</p>
+        )}
+        <div className="mt-2 grid grid-cols-1 gap-1">
+          <button onClick={() => { if (waterNeed > 0) game.waterAll() }} disabled={waterNeed === 0} className="btn-primary btn-xs w-full justify-center">
+            <Icon name="drop" size={13} /> 一键浇水{waterNeed > 0 ? ` ${waterNeed}` : ''}
+          </button>
+          <button onClick={() => { if (readyCount > 0) game.harvestAll() }} disabled={readyCount === 0} className="btn-soft btn-xs w-full justify-center">
+            <Icon name="basket" size={13} /> 一键收获{readyCount > 0 ? ` ${readyCount}` : ''}
+          </button>
+          <button onClick={() => game.replantAll()} disabled={emptyCount === 0 || seedKinds === 0} className="btn-soft btn-xs w-full justify-center">
+            <Icon name="leaf" size={13} /> 一键补种{emptyCount > 0 ? ` ${emptyCount}` : ''}
+          </button>
+        </div>
+      </section>
+
       {/* 农事待办 */}
       <section className="card p-3">
         <h4 className="section-title mb-2 text-caption">
