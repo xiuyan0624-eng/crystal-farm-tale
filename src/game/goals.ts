@@ -23,7 +23,7 @@ export const GOALS: Goal[] = [
   { id: 'farm20', name: '农场升到 Lv20', desc: '后期地块与品质都起来以后', target: 20, progress: s => s.farmLevel, reward: { coins: 6000, items: { fert_rare: 5 } } },
   { id: 'dex20', name: '图鉴收集 20 只', desc: '孵化不同的精灵填满图鉴', target: 20, progress: s => s.dex.length, reward: { coins: 1500, items: { crystal_wood: 3, crystal_fire: 3 } } },
   { id: 'dex40', name: '图鉴收集 40 只', desc: '两个元素基本集齐的程度', target: 40, progress: s => s.dex.length, reward: { coins: 4000, items: CRYSTAL_ALL } },
-  { id: 'dex60', name: '图鉴全收集 60 只', desc: '五系 60 只全部拥有过', target: 60, progress: s => s.dex.length, reward: { coins: 12000, items: { ...CRYSTAL_ALL, fert_rare: 10 } } },
+  { id: 'dex60', name: `图鉴全收集 ${SPECIES.length} 只`, desc: '包含进化形态与限定觉醒形态', target: SPECIES.length, progress: s => s.dex.length, reward: { coins: 12000, items: { ...CRYSTAL_ALL, fert_rare: 10 } } },
   { id: 'party5', name: '精灵队伍 5 只', desc: '孵化池多敲几颗蛋', target: 5, progress: s => s.sprites.length, reward: { coins: 1200 } },
   { id: 'party10', name: '精灵队伍 10 只', desc: '五个工种都能派满', target: 10, progress: s => s.sprites.length, reward: { coins: 3500, items: { fert_rare: 4 } } },
   { id: 'legend3', name: '收服 3 只传说精灵', desc: '限定传说：世界树苗 / 潮汐圣兽 / 朱雀 / 麒麟 / 星辉龙', target: 3, progress: legendCount, reward: { coins: 8000, items: { crystal_light: 8 } } },

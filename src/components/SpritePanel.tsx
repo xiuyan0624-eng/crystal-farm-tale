@@ -44,12 +44,12 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
     evoInfo = predict
       ? `Lv.${EVOLVE_LEVEL.adult} 进化为「${predict.name}」（${predict.lineName}）`
       : `Lv.${EVOLVE_LEVEL.adult} 进化：🥚活力→${atkSp.lineName} / 🥕🌿💎→${supSp.lineName}`
+  } else if (species.line === 'limited') {
+    evoInfo = species.evolvesTo ? `Lv.${EVOLVE_LEVEL.complete} 觉醒为「${SPECIES_MAP[species.evolvesTo]?.name ?? ''}」` : '限定传说精灵，不会进化'
   } else if (species.evolvesTo) {
     const ns = SPECIES_MAP[species.evolvesTo]
     const nextLv = species.stage === 'adult' ? EVOLVE_LEVEL.complete : EVOLVE_LEVEL.ultimate
     evoInfo = `Lv.${nextLv} 进化为「${ns.name}」`
-  } else if (species.line === 'limited') {
-    evoInfo = '限定传说精灵，不会进化'
   } else if (species.line === 'special') {
     evoInfo = '特殊精灵，不会进化'
   }
@@ -233,9 +233,16 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
         </div>
       )}
 
-      {/* 成长倾向 */}
-      <div className={`mt-3 ${expand ? '' : 'hidden'}`}>
-        <div className="mb-1 text-micro text-inksoft">成长倾向（决定进化方向）</div>
+      {/* 成长倾向（幼体决定进化线，始终可见） */}
+      <div className="mt-3">
+        <div className="mb-1 flex items-center gap-1.5 text-micro text-inksoft">
+          成长倾向
+          {species.line === 'baby' && (
+            <span className={`chip !py-0 text-[10px] ${dom[0] === 'vigor' ? 'border-berry/40 bg-berry/10 text-berry-deep' : 'border-sage/40 bg-sage/10 text-sage-deep'}`}>
+              {total === 0 ? '还没投喂 · 默认功能线' : dom[0] === 'vigor' ? `→ 攻击线（活力 ${dom[1]}）` : `→ 功能线（${STAT_META[dom[0]].name} ${dom[1]}）`}
+            </span>
+          )}
+        </div>
         <div className="flex h-2 overflow-hidden rounded-full bg-line/60">
           {(['nature', 'vigor', 'mana'] as FeedStat[]).map(st => (
             total > 0 && sprite.stats[st] > 0 && (

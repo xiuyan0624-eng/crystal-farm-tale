@@ -59,13 +59,14 @@ export default function DexPanel({ game }: { game: GameApi }) {
   const owned = new Set(state.dex)
   const ownedCount = SPECIES.filter(sp => owned.has(sp.id)).length
 
+  const babies = SPECIES.filter(s => s.element === tab && s.line === 'baby')
+  const attackLine = SPECIES.filter(s => s.element === tab && s.line === 'attack')
+  const supportLine = SPECIES.filter(s => s.element === tab && s.line === 'support')
   const groups: { key: string; label: string; list: SpriteSpecies[] }[] = [
-    { key: 'baby', label: '幼体期', list: SPECIES.filter(s => s.element === tab && s.line === 'baby') },
-    { key: 'attack', label: '攻击进化线', list: SPECIES.filter(s => s.element === tab && s.line === 'attack') },
-    { key: 'support', label: '功能进化线', list: SPECIES.filter(s => s.element === tab && s.line === 'support') },
     { key: 'special', label: '特殊精灵', list: SPECIES.filter(s => s.element === tab && s.line === 'special') },
     { key: 'limited', label: '限定传说', list: SPECIES.filter(s => s.element === tab && s.line === 'limited') },
   ]
+  const STAGE_LABEL: Record<string, string> = { baby: '幼体', adult: 'Lv.10', complete: 'Lv.30', ultimate: 'Lv.50' }
 
   return (
     <div className="space-y-3">
@@ -74,13 +75,13 @@ export default function DexPanel({ game }: { game: GameApi }) {
           <Icon name="book" size={18} className="text-berry" />
           <div>
             <h2 className="section-title text-ink">精灵图鉴</h2>
-            <p className="caption">共 60 只 · 每系 12 只（3 幼体 + 双进化线 + 2 特殊 + 1 限定）</p>
+            <p className="caption">共 {SPECIES.length} 只 · 每系 {SPECIES.filter(x => x.element === tab).length} 只 · 幼体 Lv.10 分叉成攻击线 / 功能线</p>
           </div>
         </div>
         <span className="pill">
           <Icon name="gem" size={13} className="text-inkfaint" />
           收集进度
-          <span className="stat-value num">{ownedCount}/60</span>
+          <span className="stat-value num">{ownedCount}/{SPECIES.length}</span>
         </span>
       </section>
 
@@ -94,13 +95,59 @@ export default function DexPanel({ game }: { game: GameApi }) {
               className={`chip ${active ? 'chip-active' : 'hover:bg-paper2'}`}>
               <span className="h-2 w-2 rounded-full" style={{ background: ELEMENTS[el].color }} />
               {ELEMENTS[el].name}系
-              <span className="num text-inkfaint">{elOwned}/12</span>
+              <span className="num text-inkfaint">{elOwned}/{SPECIES.filter(x => x.element === el).length}</span>
             </button>
           )
         })}
       </div>
 
       <GoalsPanel game={game} />
+
+      {/* 进化链：幼体 → 双线 → 究极体 */}
+      <section className="card p-4">
+        <h3 className="section-title mb-1 text-caption">
+          <Icon name="sparkle" size={15} className="text-butter-deep" />
+          {ELEMENTS[tab].name}系进化链
+          <span className="pill-soft">Lv.10 分叉 · Lv.30 · Lv.50</span>
+        </h3>
+        <p className="micro mb-3">幼体到 Lv.10 时看三项天赋：活力最高走攻击线，否则走功能线。</p>
+
+        <div className="mb-1 flex items-center gap-1 text-[10px] text-inkfaint">
+          <span className="rounded-full bg-paper2 px-2 py-0.5">幼体</span>
+          <span>三只幼体都能进化到任意一条线</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {babies.map(sp => <SpeciesCard key={sp.id} sp={sp} owned={owned.has(sp.id)} />)}
+        </div>
+
+        <div className="my-2 flex items-center justify-center gap-2 text-[10px] text-inkfaint">
+          <span className="h-px flex-1 bg-line" />
+          活力最高 → 攻击线　·　自然 / 灵力最高 → 功能线
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        {[
+          { line: 'attack' as const, name: '攻击线', list: attackLine, tone: 'text-berry' },
+          { line: 'support' as const, name: '功能线', list: supportLine, tone: 'text-sage-deep' },
+        ].map(({ name, list, tone }) => (
+          <div key={name} className="mb-2 last:mb-0">
+            <div className={`mb-1 text-[10px] font-bold ${tone}`}>{name}</div>
+            <div className="grid grid-cols-3 items-stretch gap-2">
+              {list.map((sp, i) => (
+                <div key={sp.id} className="relative">
+                  <SpeciesCard sp={sp} owned={owned.has(sp.id)} />
+                  <span className="absolute left-1 top-1 rounded-full bg-paper/85 px-1.5 text-[9px] text-inkfaint">
+                    {STAGE_LABEL[sp.stage]}
+                  </span>
+                  {i < list.length - 1 && (
+                    <span className="pointer-events-none absolute -right-1.5 top-1/2 -translate-y-1/2 text-inkfaint" aria-hidden>›</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
       {groups.map(g => {

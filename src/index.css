@@ -332,3 +332,12 @@
   50% { box-shadow: 0 0 14px rgba(211,95,123,.55); }
 }
 .boss-rage { animation: boss-rage 1.1s ease-in-out infinite; }
+
+
+/* 进化演出：星屑上浮 */
+@keyframes evolve-spark {
+  0% { opacity: 0; transform: translateY(10px) scale(.6); }
+  40% { opacity: .9; }
+  100% { opacity: 0; transform: translateY(-26px) scale(1); }
+}
+.evolve-spark { animation: evolve-spark 1.6s ease-in-out infinite; }

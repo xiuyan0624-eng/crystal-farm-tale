@@ -11,6 +11,7 @@ import MmoPanel from '../components/MmoPanel'
 import PixelWorld from '../components/PixelWorld'
 import DevPanel from '../components/DevPanel'
 import HatchReveal from '../components/HatchReveal'
+import EvolveReveal from '../components/EvolveReveal'
 import { ELEMENT_LIST, ELEMENTS } from '../game/data'
 import Icon, { type IconName } from '../ui/Icon'
 import { getBgmStyle, initAudio, isMuted, setBgmStyle, sfx, startBgm, toggleMuted } from '../game/audio'
@@ -221,6 +222,14 @@ export default function Home() {
         const hatched = state.lastHatch ? state.sprites.find(sp => sp.id === state.lastHatch) : undefined
         return hatched ? <HatchReveal sprite={hatched} tier={state.lastHatchRarity} onClose={game.dismissHatch} /> : null
       })()}
+      {state.lastEvolve && (
+        <EvolveReveal
+          fromSpecies={state.lastEvolve.fromSpecies}
+          toSpecies={state.lastEvolve.toSpecies}
+          element={state.lastEvolve.element}
+          onClose={game.dismissEvolve}
+        />
+      )}
 
       {/* 通知：纸卡 + 左强调条 */}
       <div className="pointer-events-none fixed bottom-24 right-4 z-30 flex w-[min(300px,calc(100vw-2rem))] flex-col gap-2">

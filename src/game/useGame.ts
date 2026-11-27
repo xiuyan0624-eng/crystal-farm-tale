@@ -67,6 +67,8 @@ export interface GameState {
   hatchPity: { sinceEpic: number; sinceLegend: number }
   /** 已领取的里程碑 id */
   goalsClaimed: string[]
+  /** 刚刚发生的一次进化（不落盘，只驱动演出） */
+  lastEvolve?: { fromSpecies: string; toSpecies: string; element: Element; n: number } | null
   /** 每日委托：按日期重置的三个计数 + 已领取的委托 */
   daily: { date: string; water: number; harvest: number; elite: number; claimed: string[] }
   /** 已获得的农场主装备（按 id 记录，不占背包格） */
@@ -377,6 +379,9 @@ function levelUpSprite(sp: Sprite): { sp: Sprite; evolvedTo?: string } {
       target = species.evolvesTo
     } else if (species.stage === 'complete' && cur.level >= EVOLVE_LEVEL.ultimate) {
       target = species.evolvesTo
+    } else if (species.line === 'limited' && species.evolvesTo && cur.level >= EVOLVE_LEVEL.complete) {
+      // 限定传说也有一次觉醒：Lv.30 进入「觉醒形态」
+      target = species.evolvesTo
     }
     if (!target || !SPECIES_MAP[target]) break
     const ns = SPECIES_MAP[target]
@@ -611,6 +616,7 @@ export function useGame() {
         }
         // 农场工作经验：每30秒+1（平均每分钟+2）
         let finalSprites = sprites
+        let evolvedEvent: GameState['lastEvolve'] = null
         if (doWorkExp) {
           finalSprites = sprites.map(sp => {
             if (!sp.job || sp.stamina <= 0) return sp
@@ -619,7 +625,10 @@ export function useGame() {
             while (exp >= expForLevel(level)) { exp -= expForLevel(level); level += 1 }
             if (level !== sp.level) {
               const { sp: ns, evolvedTo } = levelUpSprite({ ...sp, level, exp })
-              if (evolvedTo) setTimeout(() => notify(`🌟 「${sp.name}」在工作中进化为 ${evolvedTo}！`), 50)
+              if (evolvedTo) {
+                evolvedEvent = { fromSpecies: sp.speciesId, toSpecies: ns.speciesId, element: ns.element, n: Date.now() }
+                setTimeout(() => notify(`🌟 「${sp.name}」在工作中进化为 ${evolvedTo}！`), 50)
+              }
               return ns
             }
             return { ...sp, level, exp }
@@ -632,7 +641,7 @@ export function useGame() {
         // 世界BOSS被全服玩家缓慢削血，打死后刷新
         let worldBossHp = s.worldBossHp - (Math.random() < 0.35 ? 1 + Math.floor(Math.random() * 6) : 0)
         if (worldBossHp <= 0) worldBossHp = s.worldBossMax
-        return { ...s, animals, sprites: finalSprites, plots, worldBossHp, ...(invChanged ? { inventory: inv } : {}) }
+        return { ...s, animals, sprites: finalSprites, plots, worldBossHp, ...(evolvedEvent ? { lastEvolve: evolvedEvent } : {}), ...(invChanged ? { inventory: inv } : {}) }
       })
       // 随机世界频道聊天
       if (Math.random() < 0.22) {
@@ -1167,6 +1176,7 @@ export function useGame() {
       addItem(inv, itemId, -1)
 
       let evolvedSpeciesId: string | null = null
+      let evolveEvent: GameState['lastEvolve'] = null
       const sprites = s.sprites.map(x => {
         if (x.id !== spriteId) return x
         const stats = { ...x.stats, [stat]: x.stats[stat] + 1 }
@@ -1177,6 +1187,8 @@ export function useGame() {
         const { sp, evolvedTo } = levelUpSprite({ ...x, level, exp, stats, stamina: Math.min(100, x.stamina + 30) })
         if (evolvedTo) {
           evolvedSpeciesId = sp.speciesId
+          evolveEvent = { fromSpecies: x.speciesId, toSpecies: sp.speciesId, element: sp.element, n: Date.now() }
+          evolveEvent = { fromSpecies: x.speciesId, toSpecies: sp.speciesId, element: sp.element, n: Date.now() }
           setTimeout(() => notify(`「${x.name}」进化为 ${evolvedTo}！`), 50)
         }
         return sp
@@ -1185,7 +1197,7 @@ export function useGame() {
       const sp2 = sprites.find(x => x.id === spriteId)!
       notify(`投喂成功！「${sp2.name}」${feedDesc}+1，经验+${expGain}，体力+30（Lv.${sp2.level}）`)
       const dex = evolvedSpeciesId ? Array.from(new Set([...s.dex, evolvedSpeciesId])) : s.dex
-      return { ...s, sprites, inventory: inv, dex }
+      return { ...s, sprites, inventory: inv, dex, ...(evolveEvent ? { lastEvolve: evolveEvent } : {}) }
     })
   }, [notify, addItem])
 
@@ -1209,6 +1221,7 @@ export function useGame() {
       crystals.forEach(el => addItem(inv, `crystal_${el}`, 1))
       loot.forEach(l => addItem(inv, l.id, l.qty))
       let evolvedSpeciesId: string | null = null
+      let evolveEvent: GameState['lastEvolve'] = null
       const sprites = s.sprites.map(x => {
         if (!spriteIds.includes(x.id)) return x
         let { level, exp } = x
@@ -1217,6 +1230,7 @@ export function useGame() {
         const { sp, evolvedTo } = levelUpSprite({ ...x, level, exp })
         if (evolvedTo) {
           evolvedSpeciesId = sp.speciesId
+          evolveEvent = { fromSpecies: x.speciesId, toSpecies: sp.speciesId, element: sp.element, n: Date.now() }
           setTimeout(() => notify(`🌟 「${x.name}」在战斗中进化为 ${evolvedTo}！`), 50)
         }
         return sp
@@ -1266,7 +1280,7 @@ export function useGame() {
         addItem(inv, 'star_shard', shards)
         setTimeout(() => notify(`✨ 战斗结束捡到星尘碎片 ×${shards}`), 60)
       }
-      return { ...s, sprites, coins: s.coins + coins + dailyBonus, inventory: inv, dex, ownedEquips, eliteDaily, daily: dailyNext }
+      return { ...s, sprites, coins: s.coins + coins + dailyBonus, inventory: inv, dex, ownedEquips, eliteDaily, daily: dailyNext, ...(evolveEvent ? { lastEvolve: evolveEvent } : {}) }
     })
   }, [addItem, notify])
 
@@ -1384,6 +1398,23 @@ export function useGame() {
 
   // 里程碑领奖：条件达成且没领过才发奖励
   /** 领取每日委托奖励（完成后一次性） */
+  /** 测试用：给第一只可进化的精灵播一次进化演出 */
+  const demoEvolve = useCallback(() => {
+    setState(s => {
+      const sp = s.sprites.find(x => {
+        const sp2 = SPECIES_MAP[x.speciesId]
+        return sp2?.evolvesTo || (sp2?.line === 'baby' && sp2.evoAttack)
+      })
+      if (!sp) return s
+      const sp2 = SPECIES_MAP[sp.speciesId]
+      const to = sp2.evolvesTo ?? sp2.evoAttack!
+      return { ...s, lastEvolve: { fromSpecies: sp.speciesId, toSpecies: to, element: sp.element, n: Date.now() } }
+    })
+  }, [])
+
+  /** 关闭进化演出 */
+  const dismissEvolve = useCallback(() => setState(s => ({ ...s, lastEvolve: null })), [])
+
   const claimDaily = useCallback((taskId: 'water' | 'harvest' | 'elite') => {
     setState(s => {
       const task = DAILY_TASKS.find(t => t.id === taskId)
@@ -1445,7 +1476,7 @@ export function useGame() {
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,
     battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
-    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily),
+    claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, demoEvolve,
     setGender,
   }
 }

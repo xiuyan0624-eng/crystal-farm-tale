@@ -56,7 +56,8 @@ export default function DevPanel({ api, open, onClose }: Props) {
     { name: '农场等级 +1', fn: farmLv },
     { name: '全体精灵 +10 级', fn: levelSprites },
     { name: '补满肥料', fn: () => devSet(s => ({ ...s, inventory: { ...s.inventory, fert: 99, fert_rare: 20 } })) },
-    { name: '满图鉴（60/60）', fn: () => devSet(fullDex) },
+    { name: '满图鉴（全物种）', fn: () => devSet(fullDex) },
+    { name: '看一次进化演出', fn: () => { api.demoEvolve(); onClose() } },
   ]
 
   return (
