@@ -6,7 +6,7 @@ import SpritePanel from '../components/SpritePanel'
 import BattlePanel, { type BattleStatus } from '../components/BattlePanel'
 import DexPanel from '../components/DexPanel'
 import OwnerPanel from '../components/OwnerPanel'
-import MmoPanel from '../components/MmoPanel'
+import FarmSidebar from '../components/FarmSidebar'
 import PixelWorld from '../components/PixelWorld'
 import DevPanel from '../components/DevPanel'
 import HatchReveal from '../components/HatchReveal'
@@ -169,17 +169,16 @@ export default function Home() {
             <BattlePanel game={game} active={tab === 'battle'} onStatus={setBattleStatus} />
           </div>
         </div>
-        <aside className="hidden lg:block"><MmoPanel game={game} /></aside>
+        <aside className="hidden lg:block"><FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} /></aside>
       </main>
 
-      {/* 窄屏：世界频道收进底部折叠 */}
       <div className="mx-auto max-w-7xl px-2 pb-2 sm:px-5 lg:hidden">
         <details className="card px-3 py-2">
           <summary className="flex cursor-pointer select-none items-center gap-1.5 text-caption font-semibold text-inksoft">
-            <Icon name="users" size={15} />
-            在线玩家 / 世界频道
+            <Icon name="leaf" size={15} />
+            农事待办 / 水晶 / 小队
           </summary>
-          <div className="mt-3"><MmoPanel game={game} /></div>
+          <div className="mt-3"><FarmSidebar game={game} onNavigate={t => { setTab(t); sfx('click') }} /></div>
         </details>
       </div>
 
