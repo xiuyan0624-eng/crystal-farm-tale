@@ -15,6 +15,8 @@ import { sfx } from '../game/audio'
 
 // 竖切：任意已孵化精灵可出战（含幼体）；幼体仅普攻，技能键另行禁用
 const canFight = (sp: Sprite) => !!SPECIES_MAP[sp.speciesId]
+/** 功能线（辅助型）精灵：技能以回复/增益为主，不建议上阵 */
+const isSupportLine = (sp: Sprite) => SPECIES_MAP[sp.speciesId]?.line === 'support'
 const hasSkill = (sp: Sprite) => (SPECIES_MAP[sp.speciesId]?.skills.length ?? 0) > 0
 // 展示图：幼体/成体/究极体都是贴纸，进化形态额外加一层元素色外发光
 function spriteFace(sp: Sprite, sizeCls: string) {
@@ -109,7 +111,8 @@ export default function BattlePanel({ game, active = true, onStatus }: {
   }
 
   const startBattle = (enemy: EnemyDef | 'boss') => {
-    const team = teamPick.length > 0 ? teamPick : fighters.slice(0, 3).map(f => f.id)
+    const autoPool = fighters.filter(f => !isSupportLine(f))
+    const team = teamPick.length > 0 ? teamPick : (autoPool.length > 0 ? autoPool : fighters).slice(0, 3).map(f => f.id)
     if (team.length === 0) return
     const isBoss = enemy === 'boss'
     const hpMap: Record<string, number> = {}
@@ -592,13 +595,18 @@ export default function BattlePanel({ game, active = true, onStatus }: {
             const pickedIdx = teamPick.indexOf(sp.id)
             return (
               <button key={sp.id} onClick={() => togglePick(sp.id)}
-                className={`flex items-center gap-2.5 rounded-control border-hair p-2.5 text-left transition-colors ${pickedIdx >= 0 ? 'border-berry bg-berry/10' : 'border-line bg-paper hover:bg-paper2'}`}>
+                className={`flex items-center gap-2.5 rounded-control border-hair p-2.5 text-left transition-colors ${pickedIdx >= 0 ? 'border-berry bg-berry/10' : 'border-line bg-paper hover:bg-paper2'} ${isSupportLine(sp) ? 'opacity-80' : ''}`}>
                 <span className="sticker-tile">{spriteFace(sp, 'h-9 w-9')}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-1.5">
                     {pickedIdx >= 0 && <span className="pill-soft">{pickedIdx + 1} 号位</span>}
                     <span className="text-caption font-bold text-ink">{sp.name}</span>
                     <span className="micro num">Lv.{sp.level}</span>
+                    {isSupportLine(sp) && (
+                      <span className="pill-soft border-butter/60 text-butter-deep" title="功能线精灵技能偏辅助，输出偏低">
+                        辅助型 · 不建议出战
+                      </span>
+                    )}
                   </span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-caption text-inksoft">
                     <span className="inline-flex items-center gap-1"><ElementDot el={sp.element} />{ELEMENTS[sp.element].name}系</span>

@@ -349,6 +349,43 @@ JOBS_HOUSING = {
     'hive': ('hive.png', 200, 300, False, 0.05),
 }
 
+JOBS_LINES = {
+    'chanraoteng': ('sp_chanraoteng.png', 900, 900, False, 0.05),
+    'jingjiyao': ('sp_jingjiyao.png', 900, 900, False, 0.05),
+    'shangushumo': ('sp_shangushumo.png', 900, 900, False, 0.05),
+    'huajing': ('sp_huajing.png', 900, 900, False, 0.05),
+    'baihuaxian': ('sp_baihuaxian.png', 900, 900, False, 0.05),
+    'shengmingzhishu': ('sp_shengmingzhishu.png', 900, 900, False, 0.05),
+    'yanzhua': ('sp_yanzhua.png', 900, 900, False, 0.05),
+    'chiyanwuzhe': ('sp_chiyanwuzhe.png', 900, 900, False, 0.05),
+    'yanyuzhanshen': ('sp_yanyuzhanshen.png', 900, 900, False, 0.05),
+    'rongyanguan': ('sp_rongyanguan.png', 900, 900, False, 0.05),
+    'baoyanshou': ('sp_baoyanshou.png', 900, 900, False, 0.05),
+    'dixinyanmo': ('sp_dixinyanmo.png', 900, 900, False, 0.05),
+    'qingliushi': ('sp_qingliushi.png', 900, 900, False, 0.05),
+    'bibofashi': ('sp_bibofashi.png', 900, 900, False, 0.05),
+    'canghai': ('sp_canghai.png', 900, 900, False, 0.05),
+    'bingjingtong': ('sp_bingjingtong.png', 900, 900, False, 0.05),
+    'shuanghuashi': ('sp_shuanghuashi.png', 900, 900, False, 0.05),
+    'jibingnvwang': ('sp_jibingnvwang.png', 900, 900, False, 0.05),
+    'yandunbing': ('sp_yandunbing.png', 900, 900, False, 0.05),
+    'shanyuejuren': ('sp_shanyuejuren.png', 900, 900, False, 0.05),
+    'daditan': ('sp_daditan.png', 900, 900, False, 0.05),
+    'shaxingzhe': ('sp_shaxingzhe.png', 900, 900, False, 0.05),
+    'shabaoshou': ('sp_shabaoshou.png', 900, 900, False, 0.05),
+    'huangmozhuzhu': ('sp_huangmozhuzhu.png', 900, 900, False, 0.05),
+    'huiguangshi': ('sp_huiguangshi.png', 900, 900, False, 0.05),
+    'shenghuiqishi': ('sp_shenghuiqishi.png', 900, 900, False, 0.05),
+    'chenxinvshen': ('sp_chenxinvshen.png', 900, 900, False, 0.05),
+    'zhushangling': ('sp_zhushangling.png', 900, 900, False, 0.05),
+    'xingguijisi': ('sp_xingguijisi.png', 900, 900, False, 0.05),
+    'yuehuaxian': ('sp_yuehuaxian.png', 900, 900, False, 0.05),
+}
+
+JOBS_CROPRIPE = {
+    'lotus_flower': ('crop_lotus_flower.png', 900, 900, False, 0.05),
+}
+
 JOBS_AWAKEN = {
     'senluo': ('sp_senluo.png', 900, 900, False, 0.05),
     'canglan': ('sp_canglan.png', 900, 900, False, 0.05),
@@ -390,7 +427,7 @@ def main() -> None:
     global DRY_RUN
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--batch", choices=["first", "next", "babies", "bg", "crops2", "owners", "legends", "redraw", "scene", "housing", "awaken"], default="first", help="first=第一批四张；next=魔物/精灵/地形；babies=补齐的 15 只幼体；bg=五张战斗背景；crops2=兰花/莲藕；owners=农场主三套服装；legends=15 只传说立绘")
+    ap.add_argument("--batch", choices=["first", "next", "babies", "bg", "crops2", "owners", "legends", "redraw", "scene", "housing", "awaken", "cropripe", "lines"], default="first", help="first=第一批四张；next=魔物/精灵/地形；babies=补齐的 15 只幼体；bg=五张战斗背景；crops2=兰花/莲藕；owners=农场主三套服装；legends=15 只传说立绘")
     args = ap.parse_args()
     DRY_RUN = args.dry_run
     STICKER.mkdir(parents=True, exist_ok=True)
@@ -413,11 +450,11 @@ def main() -> None:
         for name, (out_name, mw, mh, ground, pad) in JOBS_OWNERS.items():
             process(name, out_name, mw, mh, ground, pad, src_dir, pale=True)
         return
-    jobs = {"first": JOBS_FIRST, "next": JOBS_NEXT, "babies": JOBS_BABIES, "legends": JOBS_LEGENDS, "redraw": JOBS_REDRAW, "scene": JOBS_SCENE, "housing": JOBS_HOUSING, "awaken": JOBS_AWAKEN}[args.batch]
+    jobs = {"first": JOBS_FIRST, "next": JOBS_NEXT, "babies": JOBS_BABIES, "legends": JOBS_LEGENDS, "redraw": JOBS_REDRAW, "scene": JOBS_SCENE, "housing": JOBS_HOUSING, "awaken": JOBS_AWAKEN, "cropripe": JOBS_CROPRIPE, "lines": JOBS_LINES}[args.batch]
     src_dir = INCOMING if args.batch == "first" else INCOMING / "next"
     print(f"处理 {len(jobs)} 张图（{args.batch}）{'（dry-run，不写盘）' if DRY_RUN else ''}：")
     for name, (out_name, mw, mh, ground, pad) in jobs.items():
-        process(name, out_name, mw, mh, ground, pad, src_dir, pale=args.batch in ('legends', 'redraw', 'scene', 'housing', 'awaken'))
+        process(name, out_name, mw, mh, ground, pad, src_dir, pale=args.batch in ('legends', 'redraw', 'scene', 'housing', 'awaken', 'cropripe', 'lines'))
 
 
 if __name__ == "__main__":

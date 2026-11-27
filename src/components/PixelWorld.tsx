@@ -28,6 +28,7 @@ import cropCarrotUrl from '../assets/sticker/crop_carrot.png'
 import cropLeafUrl from '../assets/sticker/crop_leaf.png'
 import cropPumpkinUrl from '../assets/sticker/crop_pumpkin.png'
 import cropLotusUrl from '../assets/sticker/crop_lotus.png'
+import cropLotusFlowerUrl from '../assets/sticker/crop_lotus_flower.png'
 import cropOrchidUrl from '../assets/sticker/crop_orchid.png'
 import cropBerryUrl from '../assets/sticker/crop_berry.png'
 import cropCornUrl from '../assets/sticker/crop_corn.png'
@@ -558,7 +559,7 @@ export default function PixelWorld({ game }: { game: GameApi }) {
       carrot: loadImg(cropCarrotUrl), leaf: loadImg(cropLeafUrl), pumpkin: loadImg(cropPumpkinUrl),
       berry: loadImg(cropBerryUrl), corn: loadImg(cropCornUrl),
       tomato: loadImg(cropTomatoUrl), ginseng: loadImg(cropGinsengUrl), bee: loadImg(beeUrl),
-      lotus: loadImg(cropLotusUrl), orchid: loadImg(cropOrchidUrl),
+      lotus: loadImg(cropLotusUrl), lotus_flower: loadImg(cropLotusFlowerUrl), orchid: loadImg(cropOrchidUrl),
     }
     // 预载 15 只幼体贴纸 + 5 色元素团子（特殊/限定精灵用）
     Object.entries(SPRITE_IMAGES).forEach(([k, v]) => { imgs[`sp_${k}`] = loadImg(v) })
@@ -1155,7 +1156,7 @@ export default function PixelWorld({ game }: { game: GameApi }) {
                 ctx.roundRect(px + 10, py + 10, PLOT_SIZE - 20, PLOT_SIZE - 20, 12)
                 ctx.fill()
               }
-              const cropImg = st.imgs[crop.id as string]
+              const cropImg = st.imgs[(crop.imgRipe && frac >= 0.82 ? crop.imgRipe : crop.id) as string]
               const cw = PLOT_SIZE * 0.64
               if (frac < 0.3 && st.imgs.sprout.ok) ctx.drawImage(st.imgs.sprout.el, cx - cw * 0.32, cy - cw * 0.29, cw * 0.64, cw * 0.59)
               else if (frac < 0.7 && st.imgs.sprout.ok) ctx.drawImage(st.imgs.sprout.el, cx - cw * 0.43, cy - cw * 0.39 + sway * 0.3, cw * 0.86, cw * 0.80)
@@ -1539,7 +1540,9 @@ export default function PixelWorld({ game }: { game: GameApi }) {
     return Object.entries(state.inventory).filter(([id]) => {
       if (!id.startsWith('seed_')) return false
       const c = CROPS.find(x => `seed_${x.id}` === id)
-      return !!c && (!c.onlyKind || c.onlyKind === kd)
+      if (!c) return false
+      // 普通地只收「不挑地块」的作物；池塘/温室只收各自专属作物
+      return kd === 'soil' ? !c.onlyKind : c.onlyKind === kd
     })
   }
 
@@ -1686,6 +1689,15 @@ export default function PixelWorld({ game }: { game: GameApi }) {
               ))}
             </div>
             <PlotUpgrade game={game} plot={popupPlot} plotIdx={popup.plotIdx} />
+            {!popupPlot.cropId && state.plots.length > 1 && (
+              <button onClick={() => {
+                if (!confirm('退耕这块地？返还一半开垦费。')) return
+                game.removePlot(popup.plotIdx!); setPopup(null); sfx('click')
+              }} className="btn-ghost btn-xs mt-2 w-full text-inkfaint">
+                <Icon name="refresh" size={12} />
+                退耕（返还 {Math.round(plotExpandCost(state.plots.length - 1) * 0.5)} 金币）
+              </button>
+            )}
           </div>
         )}
         <div className="flex flex-wrap justify-between gap-1 border-t border-line bg-paper2/80 px-3 py-1.5 text-micro text-inksoft">

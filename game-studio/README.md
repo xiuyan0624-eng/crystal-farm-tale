@@ -1160,3 +1160,51 @@ A/B/C 都还是「大贴纸摆在大空地上」。这一版把**所有单位缩
 规则在 `levelUpSprite()` 里新增一条 `line === 'limited' && level >= EVOLVE_LEVEL.complete`；觉醒形态是 `stage: 'ultimate'`，所以之后仍可做星辰觉醒（Lv.60 + 星尘×3 + 龙鳞×2）。
 
 验证：`tsc` 通过、0 console/pageerror；进化演出与图鉴链路均有截图；`game_studio_build` 已出包。
+
+### 5. 限定传说觉醒形态立绘（新增）
+用本机 GPT 出图（codex imagegen），每张以对应基础立绘为参考、要求「同一只生物长大后的形态」，并显式禁止重复特征：
+
+| 限定 | 觉醒形态 | 画面要点 |
+| --- | --- | --- |
+| 世界树苗 | 森罗树灵 | 神殿式巨树、层叠树冠、树干中闭眼笑脸、金色光脉 |
+| 潮汐圣兽 | 沧澜圣王 | 浪花王冠、半透明水身、凝沫肩甲、环绕水珠 |
+| 朱雀 | 朱雀·朱明 | 长尾火焰凤凰、日轮光环、飘散火星 |
+| 麒麟 | 麒麟·瑞光 | 分叉鹿角缀花、云纹鬃尾、踏云金蹄、祥光圆环 |
+| 星辉龙 | 星辉龙·银汉 | 细长蛇形银河龙、鳞片含星座、晶枝角、星云小翼 |
+
+![基础形态与觉醒形态](farm-tale/docs/awaken-pairs.png)
+
+接入：`import-art.py --batch awaken`（5 张 900 上限、`pale=True`）→ `normalize-art.py --only sp_<id>`（ring #FDF7EC、饱和度归一）→ `./rebuild.sh`；觉醒形态卡面文案改为「已达觉醒形态 · Lv.60 可星辰觉醒」，成长倾向条只对幼体显示。
+
+![图鉴里的两只](farm-tale/docs/awaken-dex.png)
+![养成页的觉醒形态](farm-tale/docs/awaken-sprite.png)
+
+---
+
+## 第三十六轮：双线外观 / 莲藕开花 / 功能线提示 / 退耕
+
+用户四条反馈一次性落地：
+
+### 1. 莲藕开花 + 地块限种
+- 莲藕成熟（≥82%）换成新画的「莲花 + 莲蓬 + 荷叶 + 藕节」贴纸（`crop_lotus_flower.png`），未成熟仍是荷叶/藕节；
+- 池塘只出「莲藕种子」、温室只出「兰花种子」；`plantCrop` 里也加了反向校验，往池塘/温室种普通作物会提示「只能种对应作物」，`replantAll` 的一键补种同样遵守。
+
+![莲藕开花](farm-tale/docs/lotus-bloom.png)
+![池塘只种莲藕](farm-tale/docs/pond-only-lotus.png)
+
+### 2. 攻击线 / 功能线外观分开（30 张新立绘）
+之前两条线共用「元素通用图」（同系的缠绕藤和花精长得一模一样）。这一轮按 **5 系 × 2 线 × 3 阶段 = 30 张** 逐只出图，每张都以该线上一阶段为参考，prompt 明确「攻击线=尖锐/盔甲/前倾凶猛，功能线=圆润/花饰/宁静治愈，不得与另一条线重复」。
+
+![30 张双线立绘](farm-tale/docs/lines-30.png)
+![图鉴里的两条线](farm-tale/docs/lines-dex.png)
+![养成页对比](farm-tale/docs/lines-sprite.png)
+
+接入：`import-art.py --batch lines`（`JOBS_LINES`，900 上限、`pale=True`）→ `normalize-art.py --only sp_<30 id>` → `./rebuild.sh`；`spriteImage()` 先查 `SPRITE_IMAGES[speciesId]`，所以这些 per-species 贴纸会自动优先于元素通用图。
+
+### 3. 功能线不建议出战
+选人卡片给 `line === 'support'` 的精灵加 `辅助型 · 不建议出战` 徽章并压暗；「小队出击」的默认编队会跳过功能线取前 3，只有全队都是功能线时才回退。
+
+![功能线提示](farm-tale/docs/support-line-warning.png)
+
+### 4. 退耕
+地块弹窗新增「退耕（返还 N 金币）」：只能退空地、至少留 1 块、返还一半开垦费；退还后网格重排。

@@ -48,6 +48,8 @@ export interface CropDef {
   unlockLv: number // 农场等级解锁
   /** 只能在特定地块类型里种（温室/池塘） */
   onlyKind?: PlotKind
+  /** 成熟后换一张图（如莲藕开花） */
+  imgRipe?: string
 }
 
 export const CROPS: CropDef[] = [
@@ -59,7 +61,7 @@ export const CROPS: CropDef[] = [
   { id: 'berry', name: '草莓', icon: '🍓', growTime: 150, yield: 2, crystalElement: 'wood', crystalChance: 0.26, seedPrice: 80, sellPrice: 230, unlockLv: 9 },
   { id: 'ginseng', name: '人参', icon: '🫚', growTime: 200, yield: 1, crystalElement: 'any', crystalChance: 0.35, seedPrice: 120, sellPrice: 460, unlockLv: 12 },
   { id: 'orchid', name: '兰花', icon: '🌸', growTime: 240, yield: 2, crystalElement: 'light', crystalChance: 0.45, seedPrice: 260, sellPrice: 880, unlockLv: 16, onlyKind: 'greenhouse' },
-  { id: 'lotus', name: '莲藕', icon: '🪷', growTime: 300, yield: 2, crystalElement: 'water', crystalChance: 0.55, seedPrice: 320, sellPrice: 1180, unlockLv: 20, onlyKind: 'pond' },
+  { id: 'lotus', name: '莲藕', icon: '🪷', growTime: 300, yield: 2, crystalElement: 'water', crystalChance: 0.55, seedPrice: 320, sellPrice: 1180, unlockLv: 20, onlyKind: 'pond', imgRipe: 'lotus_flower' },
 ]
 
 // -------------------- 农场等级 --------------------

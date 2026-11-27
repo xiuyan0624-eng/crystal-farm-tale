@@ -761,6 +761,10 @@ export function useGame() {
         notify(`${cropDef.name}只能种在${PLOT_KINDS[cropDef.onlyKind].name}里`)
         return s
       }
+      if (plotKind !== 'soil' && !cropDef?.onlyKind) {
+        notify(`${PLOT_KINDS[plotKind].name}里只能种${PLOT_KINDS[plotKind].name === '温室' ? '温室' : '水生'}作物`)
+        return s
+      }
       const plots = s.plots.map((p, i) => i === plotIdx ? { ...p, cropId, plantedAt: Date.now(), waterCount: 0, fertilizer: 0 as Plot['fertilizer'] } : p)
       const inv = { ...s.inventory }
       addItem(inv, seedId, -1)
@@ -779,7 +783,9 @@ export function useGame() {
         if (p.cropId) continue
         const kind = p.kind ?? 'soil'
         const cands = CROPS
-          .filter(c => s.farmLevel >= c.unlockLv && (!c.onlyKind || c.onlyKind === kind) && (inv[`seed_${c.id}`] ?? 0) > 0)
+          .filter(c => s.farmLevel >= c.unlockLv
+            && (kind === 'soil' ? !c.onlyKind : c.onlyKind === kind)
+            && (inv[`seed_${c.id}`] ?? 0) > 0)
           .sort((a, b) => (inv[`seed_${b.id}`] ?? 0) - (inv[`seed_${a.id}`] ?? 0))
         if (!cands.length) break
         const c = cands[0]
@@ -991,6 +997,20 @@ export function useGame() {
       if (s.coins < cost) { notify(`扩建需要 💰${cost}`); return s }
       notify(`🚜 开垦了新地块！现在有 ${s.plots.length + 1} 块田`)
       return { ...s, coins: s.coins - cost, plots: [...s.plots, newPlot()] }
+    })
+  }, [notify])
+
+  /** 退耕：删掉一块空地，返还一半开垦费（至少保留 1 块） */
+  const removePlot = useCallback((plotIdx: number) => {
+    setState(s => {
+      const p = s.plots[plotIdx]
+      if (!p) return s
+      if (p.cropId) { setTimeout(() => notify('这块地还有作物，先收完再退耕'), 20); return s }
+      if (s.plots.length <= 1) { setTimeout(() => notify('至少要留一块地'), 20); return s }
+      const refund = Math.round(plotExpandCost(s.plots.length - 1) * 0.5)
+      const plots = s.plots.filter((_, i) => i !== plotIdx)
+      setTimeout(() => notify(`🧹 退耕一块地，返还 ${refund} 金币（现有 ${plots.length} 块）`), 20)
+      return { ...s, coins: s.coins + refund, plots }
     })
   }, [notify])
 
@@ -1475,7 +1495,7 @@ export function useGame() {
     plant, water, fertilize, harvest, clearPest, upgradePlot, expandPlot, waterAll, harvestAll,
     feedAnimal, collectProduce,
     incubate, hatch, dismissHatch, feedSprite, summonLimited, assignJob,
-    battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
+    battleWin, awakenStar, equipItem, unequipSlot, enhanceEquip, craftCharm, convertPlot, removePlot, updateSpriteHp, damageWorldBoss, renameSprite, resetGame, devSet, claimGoal,
     claimDaily, DAILY_TASKS, dailyState: freshDaily(state.daily), dismissEvolve, demoEvolve,
     setGender,
   }
