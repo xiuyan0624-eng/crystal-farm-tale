@@ -197,7 +197,7 @@ export const SPECIES: SpriteSpecies[] = [
   { id: 'xianggutongzi', element: 'wood', name: '香菇童子', rarity: 'rare', stage: 'baby', line: 'special', icon: '🍄', desc: '菌盖斗笠的小蘑菇精灵', farm: '防虫效果+50%', skills: [dmg('孢子迷雾', '伤害并降低敌人命中', 1.4)] },
   { id: 'pugongying', element: 'wood', name: '蒲公英信使', rarity: 'rare', stage: 'baby', line: 'special', icon: '🎐', desc: '蒲公英球形状，随风飘', farm: '作物生长+10%', skills: [dmg('风之信标', '伤害并提升全队速度', 1.3)] },
   { id: 'shijiemiao', element: 'wood', name: '世界树苗', rarity: 'legend', stage: 'baby', line: 'limited', icon: '🎄', desc: '发着绿光的传说树苗，根须连着大地', farm: '全场精灵体力恢复翻倍', passive: '战斗后掉落翻倍', skills: [heal('森罗万象', '全体回血+攻击提升', 0.8)], evolvesTo: 'senluo' },
-  { id: 'senluo', element: 'wood', name: '森罗树灵', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🌳', img: 'shijiemiao', desc: '世界树苗长成的森罗之树，根脉铺满整片农场', farm: '全场精灵体力恢复翻倍', passive: '战斗后掉落翻倍', skills: [heal('森罗万象', '全体回血+攻击提升', 1.0)] },
+  { id: 'senluo', element: 'wood', name: '森罗树灵', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🌳', img: 'senluo', desc: '世界树苗长成的森罗之树，根脉铺满整片农场', farm: '全场精灵体力恢复翻倍', passive: '战斗后掉落翻倍', skills: [heal('森罗万象', '全体回血+攻击提升', 1.0)] },
 
   // ==================== 水系（流动·变幻·冰冻）====================
   { id: 'shuizhu', element: 'water', name: '水珠仔', rarity: 'common', stage: 'baby', line: 'baby', icon: '💧', img: 'shuizhu', desc: '透明小水珠，会折射光', farm: '浇水+5%', skills: [], evoAttack: 'qingliushi', evoSupport: 'bingjingtong' },
@@ -212,7 +212,7 @@ export const SPECIES: SpriteSpecies[] = [
   { id: 'yunduoshou', element: 'water', name: '云朵兽', rarity: 'rare', stage: 'baby', line: 'special', icon: '☁️', desc: '蓬松小云朵，会下雨', farm: '自动浇水范围+1', skills: [dmg('云雾', '伤害并降低敌人命中', 1.3)] },
   { id: 'zhenzhubei', element: 'water', name: '珍珠贝', rarity: 'rare', stage: 'baby', line: 'special', icon: '🦪', desc: '张合的蚌壳，内含珍珠', farm: '水晶掉率+10%', skills: [heal('珍珠护盾', '为自身附加护盾', 0.45)] },
   { id: 'chaoxi', element: 'water', name: '潮汐圣兽', rarity: 'legend', stage: 'baby', line: 'limited', icon: '🌕', desc: '半透明的潮汐巨兽，随月相变化', farm: '每回合自动治疗全队', passive: '战斗后缓慢自愈', skills: [dmg('潮汐往复', '群体控制+伤害', 2.8)], evolvesTo: 'canglan' },
-  { id: 'canglan', element: 'water', name: '沧澜圣王', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🌊', img: 'chaoxi', desc: '潮汐圣兽完全展开的形态，海流随呼吸涨落', farm: '每回合自动治疗全队', passive: '战斗后缓慢自愈', skills: [dmg('沧澜覆海', '群体控制+伤害', 3.2)] },
+  { id: 'canglan', element: 'water', name: '沧澜圣王', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🌊', img: 'canglan', desc: '潮汐圣兽完全展开的形态，海流随呼吸涨落', farm: '每回合自动治疗全队', passive: '战斗后缓慢自愈', skills: [dmg('沧澜覆海', '群体控制+伤害', 3.2)] },
 
   // ==================== 火系（燃烧·爆发·熔岩）====================
   { id: 'huomiao', element: 'fire', name: '火苗仔', rarity: 'common', stage: 'baby', line: 'baby', icon: '🔥', img: 'huomiao', desc: '一小簇跳动的火苗', farm: '驱虫+5%', skills: [], evoAttack: 'yanzhao', evoSupport: 'rongyanquan' },
@@ -227,7 +227,7 @@ export const SPECIES: SpriteSpecies[] = [
   { id: 'denglonggui', element: 'fire', name: '灯笼鬼', rarity: 'rare', stage: 'baby', line: 'special', icon: '🏮', desc: '提着灯笼的火鬼', farm: '夜间作物生长+15%', skills: [dmg('鬼火', '伤害并降低敌人攻击', 1.4)] },
   { id: 'zhadanji', element: 'fire', name: '炸蛋鸡', rarity: 'rare', stage: 'baby', line: 'special', icon: '🐔', desc: '会下炸弹蛋的火鸡', farm: '驱虫范围+1', skills: [dmg('爆裂蛋', '投掷炸弹造成范围伤害', 1.8)] },
   { id: 'zhuque', element: 'fire', name: '朱雀', rarity: 'legend', stage: 'baby', line: 'limited', icon: '🦅', desc: '四象朱雀，尾羽燃烧', farm: '全队攻击+10%', passive: '死亡后自动复活1次', skills: [dmg('南明离火', '无视防御的高额伤害', 3.0)], evolvesTo: 'zhuming' },
-  { id: 'zhuming', element: 'fire', name: '朱雀·朱明', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🔥', img: 'zhuque', desc: '南明离火凝成的朱雀真身，双翼展开半片天', farm: '全队攻击+10%', passive: '死亡后自动复活1次', skills: [dmg('朱明焚天', '无视防御的高额伤害', 3.4)] },
+  { id: 'zhuming', element: 'fire', name: '朱雀·朱明', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🔥', img: 'zhuming', desc: '南明离火凝成的朱雀真身，双翼展开半片天', farm: '全队攻击+10%', passive: '死亡后自动复活1次', skills: [dmg('朱明焚天', '无视防御的高额伤害', 3.4)] },
 
   // ==================== 土系（厚重·守护·大地）====================
   { id: 'tudundun', element: 'earth', name: '土墩墩', rarity: 'common', stage: 'baby', line: 'baby', icon: '🟤', img: 'tudundun', desc: '圆圆的小土堆，顶着一株草', farm: '施肥+5%', skills: [], evoAttack: 'yandunbing', evoSupport: 'shaxingzhe' },
@@ -242,7 +242,7 @@ export const SPECIES: SpriteSpecies[] = [
   { id: 'nirenou', element: 'earth', name: '泥人偶', rarity: 'rare', stage: 'baby', line: 'special', icon: '🧸', desc: '泥土捏的小人，会变形', farm: '施肥范围+1', skills: [dmg('泥沼', '伤害并减速敌人', 1.3)] },
   { id: 'jingkuangshou', element: 'earth', name: '晶矿兽', rarity: 'rare', stage: 'baby', line: 'special', icon: '💠', desc: '背负水晶矿簇的兽', farm: '采矿+20%', skills: [dmg('晶刺', '伤害并降低敌人防御', 1.6)] },
   { id: 'qilin', element: 'earth', name: '麒麟', rarity: 'legend', stage: 'baby', line: 'limited', icon: '🦌', desc: '四象麒麟，脚踏祥云', farm: '全队防御+15%', passive: '全队防御提升', skills: [heal('地脉回春', '群体治疗+解除负面', 0.6)], evolvesTo: 'ruiguang' },
-  { id: 'ruiguang', element: 'earth', name: '麒麟·瑞光', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '✨', img: 'qilin', desc: '踏祥云而来的麒麟真身，所过之处草木回春', farm: '全队防御+15%', passive: '全队防御提升', skills: [heal('瑞光地脉', '群体治疗+解除负面', 0.85)] },
+  { id: 'ruiguang', element: 'earth', name: '麒麟·瑞光', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '✨', img: 'ruiguang', desc: '踏祥云而来的麒麟真身，所过之处草木回春', farm: '全队防御+15%', passive: '全队防御提升', skills: [heal('瑞光地脉', '群体治疗+解除负面', 0.85)] },
 
   // ==================== 光系（星光·希望·祝福）====================
   { id: 'xingchen', element: 'light', name: '星尘仔', rarity: 'common', stage: 'baby', line: 'baby', icon: '⭐', img: 'xingchen', desc: '星尘聚成的小团子，身上有星星闪烁', farm: '采集水晶+5%', skills: [], evoAttack: 'huiguangshi', evoSupport: 'zhumengling' },
@@ -257,7 +257,7 @@ export const SPECIES: SpriteSpecies[] = [
   { id: 'liuxinghu', element: 'light', name: '流星狐', rarity: 'rare', stage: 'baby', line: 'special', icon: '🦊', desc: '尾巴拖着流星的小狐狸', farm: '收获+10%', skills: [dmg('流星冲刺', '先制的高速冲击', 1.7)] },
   { id: 'xuyuandeng', element: 'light', name: '许愿灯', rarity: 'rare', stage: 'baby', line: 'special', icon: '🏮', desc: '飘浮的许愿天灯，会聆听心愿', farm: '金币产出+10%', skills: [heal('愿望微光', '温暖的治愈之光', 0.4)] },
   { id: 'xinghuilong', element: 'light', name: '星辉龙', rarity: 'legend', stage: 'baby', line: 'limited', icon: '🐲', desc: '星辉凝成的幼龙，鳞片映着银河', farm: '全属性精灵经验+15%', passive: '全属性+10%', skills: [dmg('星河吐息', '全属性高额伤害', 2.9)], evolvesTo: 'yinhan' },
-  { id: 'yinhan', element: 'light', name: '星辉龙·银汉', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🐉', img: 'xinghuilong', desc: '星辉幼龙长成银河巨龙，鳞片里流过整条银汉', farm: '全属性精灵经验+15%', passive: '全属性+10%', skills: [dmg('银汉倾落', '全属性高额伤害', 3.3)] },
+  { id: 'yinhan', element: 'light', name: '星辉龙·银汉', rarity: 'legend', stage: 'ultimate', line: 'limited', icon: '🐉', img: 'yinhan', desc: '星辉幼龙长成银河巨龙，鳞片里流过整条银汉', farm: '全属性精灵经验+15%', passive: '全属性+10%', skills: [dmg('银汉倾落', '全属性高额伤害', 3.3)] },
 ]
 
 export const SPECIES_MAP: Record<string, SpriteSpecies> = Object.fromEntries(SPECIES.map(s => [s.id, s]))

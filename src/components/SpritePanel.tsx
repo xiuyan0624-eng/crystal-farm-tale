@@ -45,7 +45,11 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
       ? `Lv.${EVOLVE_LEVEL.adult} 进化为「${predict.name}」（${predict.lineName}）`
       : `Lv.${EVOLVE_LEVEL.adult} 进化：🥚活力→${atkSp.lineName} / 🥕🌿💎→${supSp.lineName}`
   } else if (species.line === 'limited') {
-    evoInfo = species.evolvesTo ? `Lv.${EVOLVE_LEVEL.complete} 觉醒为「${SPECIES_MAP[species.evolvesTo]?.name ?? ''}」` : '限定传说精灵，不会进化'
+    evoInfo = species.evolvesTo
+      ? `Lv.${EVOLVE_LEVEL.complete} 觉醒为「${SPECIES_MAP[species.evolvesTo]?.name ?? ''}」`
+      : species.stage === 'ultimate'
+        ? '已达觉醒形态 · Lv.60 可星辰觉醒'
+        : '限定传说精灵，不会进化'
   } else if (species.evolvesTo) {
     const ns = SPECIES_MAP[species.evolvesTo]
     const nextLv = species.stage === 'adult' ? EVOLVE_LEVEL.complete : EVOLVE_LEVEL.ultimate
@@ -234,7 +238,7 @@ function SpriteCard({ sprite, game }: { sprite: Sprite; game: GameApi }) {
       )}
 
       {/* 成长倾向（幼体决定进化线，始终可见） */}
-      <div className="mt-3">
+      <div className={`mt-3 ${species.line === 'baby' ? '' : 'hidden'}`}>
         <div className="mb-1 flex items-center gap-1.5 text-micro text-inksoft">
           成长倾向
           {species.line === 'baby' && (

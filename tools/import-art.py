@@ -349,6 +349,14 @@ JOBS_HOUSING = {
     'hive': ('hive.png', 200, 300, False, 0.05),
 }
 
+JOBS_AWAKEN = {
+    'senluo': ('sp_senluo.png', 900, 900, False, 0.05),
+    'canglan': ('sp_canglan.png', 900, 900, False, 0.05),
+    'zhuming': ('sp_zhuming.png', 900, 900, False, 0.05),
+    'ruiguang': ('sp_ruiguang.png', 900, 900, False, 0.05),
+    'yinhan': ('sp_yinhan.png', 900, 900, False, 0.05),
+}
+
 JOBS_LEGENDS = {
     'sp_shangushumo': ('sp_shangushumo.png', 900, 900, False, 0.05),
     'sp_shengmingzhishu': ('sp_shengmingzhishu.png', 900, 900, False, 0.05),
@@ -382,7 +390,7 @@ def main() -> None:
     global DRY_RUN
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--batch", choices=["first", "next", "babies", "bg", "crops2", "owners", "legends", "redraw", "scene", "housing"], default="first", help="first=第一批四张；next=魔物/精灵/地形；babies=补齐的 15 只幼体；bg=五张战斗背景；crops2=兰花/莲藕；owners=农场主三套服装；legends=15 只传说立绘")
+    ap.add_argument("--batch", choices=["first", "next", "babies", "bg", "crops2", "owners", "legends", "redraw", "scene", "housing", "awaken"], default="first", help="first=第一批四张；next=魔物/精灵/地形；babies=补齐的 15 只幼体；bg=五张战斗背景；crops2=兰花/莲藕；owners=农场主三套服装；legends=15 只传说立绘")
     args = ap.parse_args()
     DRY_RUN = args.dry_run
     STICKER.mkdir(parents=True, exist_ok=True)
@@ -405,11 +413,11 @@ def main() -> None:
         for name, (out_name, mw, mh, ground, pad) in JOBS_OWNERS.items():
             process(name, out_name, mw, mh, ground, pad, src_dir, pale=True)
         return
-    jobs = {"first": JOBS_FIRST, "next": JOBS_NEXT, "babies": JOBS_BABIES, "legends": JOBS_LEGENDS, "redraw": JOBS_REDRAW, "scene": JOBS_SCENE, "housing": JOBS_HOUSING}[args.batch]
+    jobs = {"first": JOBS_FIRST, "next": JOBS_NEXT, "babies": JOBS_BABIES, "legends": JOBS_LEGENDS, "redraw": JOBS_REDRAW, "scene": JOBS_SCENE, "housing": JOBS_HOUSING, "awaken": JOBS_AWAKEN}[args.batch]
     src_dir = INCOMING if args.batch == "first" else INCOMING / "next"
     print(f"处理 {len(jobs)} 张图（{args.batch}）{'（dry-run，不写盘）' if DRY_RUN else ''}：")
     for name, (out_name, mw, mh, ground, pad) in jobs.items():
-        process(name, out_name, mw, mh, ground, pad, src_dir, pale=args.batch in ('legends', 'redraw', 'scene', 'housing'))
+        process(name, out_name, mw, mh, ground, pad, src_dir, pale=args.batch in ('legends', 'redraw', 'scene', 'housing', 'awaken'))
 
 
 if __name__ == "__main__":
